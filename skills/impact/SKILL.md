@@ -1,6 +1,6 @@
 ---
 name: impact
-description: "Famille de skills pédagogiques et de communication Infopro Digital. Auto-trigger sur : formation, pédagogie, formateur, apprenant, slide, présentation, feedback, biais cognitifs, mémoire, enneagramme, ennéatype, storytelling, persuasion, facilitation, Liberating Structures, communication non-violente, CNV, assertivité, simplifier, accroche, titre slogan, adapter message, gamification, badges, points, streaks, engagement, adaptive learning, répétition espacée, rétention, instructional design, ingénierie pédagogique, ADDIE, objectifs pédagogiques, microlearning, Kirkpatrick, Bloom."
+description: "Famille de skills pédagogiques et de communication Infopro Digital. Auto-trigger sur : formation, pédagogie, formateur, apprenant, slide, présentation, feedback, biais cognitifs, mémoire, enneagramme, ennéatype, storytelling, persuasion, facilitation, Liberating Structures, communication non-violente, CNV, assertivité, simplifier, accroche, titre slogan, adapter message, gamification, badges, points, streaks, engagement, adaptive learning, répétition espacée, rétention, instructional design, ingénierie pédagogique, ADDIE, objectifs pédagogiques, microlearning, Kirkpatrick, Bloom, humaniser, non-robot, texte robot, marqueurs IA, sonner humain, réécrire IA, détection IA, prose authentique, tics IA, burstiness, voix authentique."
 tags: [formation, pédagogie, communication, infopro-digital]
 version: 2.0.0
 origin: Formations-Infopro
@@ -35,6 +35,7 @@ origin: Formations-Infopro
 | `enneagramme.md` | 9 profils psychologiques face à l'IA — guide formateur | enneagramme, ennéatype, type 1-9, profil, défense, triade |
 | `citations.md` | 100+ citations classées par 17 thèmes (K) | citation, peur erreur, apprentissage, changement, IA, persévérance |
 | `simplifier.md` | Art de simplifier le complexe — 12 concepts (N) | Feynman, malédiction connaissance, Hayakawa, simplifier, vulgariser |
+| `metaphrase.md` | Écrire une métaphore pédagogique qui tient — format standard, arc 3-temps, 4 critères Hofstadter, règle des 2, 9 leviers psy, workflow, red flags | métaphore, métaphrase, analogie, image pédagogique, pont cognitif, rédiger métaphore |
 | `facilitation.md` | Liberating Structures, Open Space, World Café, ORID | facilitation, intelligence collective, 1-2-4-all, open space, world café |
 | `corps-voix.md` | Voix, posture, geste, regard, congruence — présence physique | voix, posture, non-verbal, geste, regard, présence scène |
 | `questionnement.md` | Socrate, Bloom, CNV, Clean Language, GROW, entonnoir | question ouverte, maïeutique, coaching, GROW, reformulation |
@@ -47,6 +48,7 @@ origin: Formations-Infopro
 | `instructional-design.md` | ADDIE, SAM, Backward Design, Bloom verbs, Mager objectives, Kirkpatrick 4 niveaux, Mayer Multimedia, 70-20-10, microlearning | instructional design, ingénierie pédagogique, objectifs pédagogiques, e-learning, ADDIE, évaluation formation |
 | `quiz-design.md` | Distracteurs efficaces, Hypercorrection Effect, biais dans les QCM, reponse fun, coverage, niveaux Bloom, checklist revue | quiz, QCM, distracteur, question formation, evaluer, tester connaissances, fausse reponse, biais apprenant |
 | `vision-duolingo-ia.md` | Vision stratégique "Duolingo de l'IA" — architecture, pipeline génération, univers métaphore, gamification, adaptive learning | Duolingo de l'IA, formation IA adaptative, génération dynamique contenu, univers métaphore, charte graphique formation |
+| `humanizer.md` | Détecter et corriger les marqueurs IA dans un texte — 29+ patterns, marqueurs FR (ouvertures robotiques, participe présent, simplifications lexicales, métaphores creuses), 8 règles stop-slop, rythme & burstiness, anti-soulless, process 2 passes + test oral, scoring 5 dimensions, 5 exemples avant/après avec audit intégré | humaniser, non-robot, texte robot, marqueurs IA, sonner humain, réécrire IA, détection IA, prose authentique, tics IA, burstiness, voix authentique, ouvertures robotiques |
 
 ---
 
@@ -77,6 +79,10 @@ origin: Formations-Infopro
 **Ingénierie pédagogique : de l'objectif au livrable** → `instructional-design.md` + `structure.md` + `adaptive-learning.md`
 
 **Vision "Duolingo de l'IA" — formation adaptative complète** → `vision-duolingo-ia.md` + `gamification.md` + `adaptive-learning.md`
+
+**Humaniser un texte IA / supprimer les marqueurs robot** → `humanizer.md`
+
+**Réécrire dans le style de quelqu'un (calibration voix)** → `humanizer.md` (partie Calibration de voix)
 
 ---
 

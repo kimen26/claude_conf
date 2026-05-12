@@ -114,7 +114,7 @@ version: 1.0.0
 3. Rend le quiz partageable ("t'as vu la reponse D ?")
 
 **Regles** :
-- 1 reponse fun par question, toujours en position D (convention)
+- 1 reponse fun par question, position libre (A/B/C/D -- varier pour eviter l'effet "toujours la derniere")
 - Doit etre clairement absurde (pas de risque de confusion)
 - Peut contenir une reference culturelle, un jeu de mots, une anthropomorphisation
 - Ne doit jamais etre meprisant envers l'apprenant
@@ -169,7 +169,7 @@ Avant de valider un quiz, verifier :
 - [ ] **Bonne reponse** : claire, sans ambiguite, fidele au contenu enseigne
 - [ ] **Distracteur 1** : exploite un biais ou une peur courante (Hypercorrection)
 - [ ] **Distracteur 2** : mauvais mecanisme, clairement faux, pas une demi-verite
-- [ ] **Reponse fun** : en position D, clairement absurde, cree un sourire
+- [ ] **Reponse fun** : clairement absurde, cree un sourire, position libre (varier)
 - [ ] **Aucun distracteur n'est partiellement vrai** (test : "est-ce que quelqu'un de competent pourrait argumenter que c'est juste ?")
 - [ ] **Niveau Bloom** identifie (1-4)
 - [ ] **Section cible** identifiee (tag `<!-- #sXX -->`)
