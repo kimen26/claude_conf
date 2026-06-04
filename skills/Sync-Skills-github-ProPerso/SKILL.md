@@ -116,7 +116,8 @@ But : aperçu rapide.
    
    Confirmer le push ? (oui/non)
    ```
-5. Si "oui" → `scripts/push.sh <skill>` → confirmer + afficher URL du commit
+5. **Avant le commit (OBLIGATOIRE)** : ajouter/mettre à jour l'entrée du skill dans `CHANGELOG.md` (racine du repo) — `- AAAA-MM-JJ (perso|taff) — <résumé du changement>`. C'est la trace inter-machines (cf. règle 7).
+6. Si "oui" → `scripts/push.sh <skill>` → **s'assurer que le commit inclut `CHANGELOG.md`** (sinon `git add CHANGELOG.md` avant le push) → confirmer + afficher URL du commit
 
 ## 🛠️ Scripts helpers
 
@@ -137,6 +138,7 @@ Tous les scripts sont **idempotents** et **sûrs** : aucune écriture sans avoir
 4. **TOUJOURS** préférer SSH (port 443) ; fallback HTTPS si échec.
 5. Si le workspace n'existe pas → le cloner. Si vieux → `git fetch + reset --hard origin/main`.
 6. Si conflit ou erreur réseau → s'arrêter et expliquer, **ne jamais retry en boucle**.
+7. **TOUJOURS** mettre à jour `CHANGELOG.md` (racine du repo) avant chaque push : une ligne datée `(perso|taff)` par skill modifié. Un push sans entrée CHANGELOG est invalide — c'est cette trace qui permet de savoir, au prochain sync, **quelle machine porte la version la plus à jour** et de ne committer que le fichier optimisé.
 
 ## 🧪 Premier lancement (bootstrap)
 
@@ -157,6 +159,7 @@ Si `~/.claude/skills-sync-workspace/claude_conf/` n'existe pas :
 ```
 kimen26/claude_conf/
 ├── README.md
+├── CHANGELOG.md          # journal des versions par skill (perso|taff) — MAJ OBLIGATOIRE à chaque push
 └── skills/
     ├── impact/
     ├── deep-research/
