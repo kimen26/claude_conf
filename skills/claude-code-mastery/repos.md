@@ -56,6 +56,7 @@
 - **Structure** : `.claude-plugin/plugin.json` + `commands/` + `agents/` + `skills/` + `.mcp.json`
 - **Installation** : `/plugin install {name}@claude-plugins-official`
 - **Interet** : ELEVE — marketplace officielle + reference pour creer ses propres plugins
+- **Detail** : voir `plugins.md` dans ce skill (setup Yann : actifs/desactives + regles)
 
 ### A.4 anthropics/claude-cookbooks — 37.8k stars
 - **URL** : https://github.com/anthropics/claude-cookbooks
