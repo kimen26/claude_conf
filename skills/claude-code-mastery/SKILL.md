@@ -376,6 +376,13 @@ Ref : https://github.com/anthropics/claude-plugins-official (16.6k stars)
 | **Auto Mode** | Reduit les prompts d'approbation | GA |
 | **Context Editing** | Supprime outputs tools obsoletes du contexte (-84%) | GA |
 | **1M tokens context** | Fenetre de contexte complete | GA |
+| **Path-scoped rules** | `paths:` YAML dans `rules/` → chargement conditionnel par glob | GA |
+| **`context: fork` (skills)** | Skill execute dans subagent isole, contexte principal preserve | GA |
+| **Dynamic injection (skills)** | `` !`command` `` execute shell avant injection du SKILL.md | GA |
+| **Hook handler `agent`** | Hooks peuvent lancer un agent (en plus de `command`/`http`/`mcp_tool`/`prompt`) | GA |
+| **Skills > Commands** | Custom commands fusionnes dans skills. `.claude/commands/` marche encore mais `SKILL.md` est canonique | GA |
+
+**Sources officielles** : `code.claude.com/docs/en/` ([memory](https://code.claude.com/docs/en/memory) · [skills](https://code.claude.com/docs/en/skills) · [hooks](https://code.claude.com/docs/en/hooks) · [settings](https://code.claude.com/docs/en/settings))
 
 ---
 
