@@ -39,7 +39,20 @@ if [ ! -d "$LOCAL_DIR" ]; then
   exit 1
 fi
 
+# Préserver une édition CHANGELOG non commitée du reset --hard d'ensure-workspace
+CHG="$WORKSPACE/CHANGELOG.md"
+CHG_TMP=""
+if [ -f "$CHG" ] && ! git -C "$WORKSPACE" diff --quiet -- CHANGELOG.md 2>/dev/null; then
+  CHG_TMP="$(mktemp)"
+  cp "$CHG" "$CHG_TMP"
+fi
+
 bash "$SCRIPT_DIR/ensure-workspace.sh" > /dev/null
+
+if [ -n "$CHG_TMP" ]; then
+  cp "$CHG_TMP" "$CHG"
+  rm -f "$CHG_TMP"
+fi
 
 # Sync local → workspace
 echo "📤 Préparation du push pour '$SKILL'..."
@@ -54,6 +67,17 @@ if git diff --cached --quiet; then
   echo "ℹ️  Aucune différence après copie. Rien à pousser."
   exit 0
 fi
+
+# Garde-fou CHANGELOG (règle 7 du SKILL.md) : entrée datée du jour pour ce skill requise
+TODAY="$(date +%F)"
+if ! grep -q "^- $TODAY .*" CHANGELOG.md || ! grep -B3 -A3 "^## $SKILL$" CHANGELOG.md | grep -q "$TODAY"; then
+  echo "⛔ CHANGELOG.md : pas d'entrée '- $TODAY ...' sous '## $SKILL'." >&2
+  echo "   Règle 7 : un push sans entrée CHANGELOG est invalide." >&2
+  echo "   Ajoute la ligne dans $WORKSPACE/CHANGELOG.md puis relance." >&2
+  git reset -q
+  exit 3
+fi
+git add CHANGELOG.md
 
 # Commit
 COMMIT_MSG="sync: update skill $SKILL from $(hostname)"
