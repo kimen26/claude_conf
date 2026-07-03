@@ -17,6 +17,7 @@ La machine d'origine `(perso|taff)` indique d'où vient la version la plus à jo
 - 2026-07-03 (taff) — **Ajout. Mégaskill fusion de 4 skills** : `cycle` (routeur) + `audit-claude-archi` + `roborock-challenge` + `challenge-local` → SKILL.md routeur + 12 `references/`. Délègue aux plugins officiels (claude-md-management, claude-code-setup, skill-creator, hookify). Section Maintenance intégrée (version + changelog interne + règles de propagation). **Côté perso : pull puis archiver les 3 anciens skills locaux** (retirés du repo).
 
 ## claude-code-mastery
+- 2026-07-03 (taff, rev2) — `plugins.md` : les 10 plugins réactivés + commandes exactes par plugin (kit de base 3 + à la demande) + séquence débutant.
 - 2026-07-03 (taff) — `repos.md` : veille 02/07 (ECC renommé, section D compression tokens rtk/headroom/context-mode/caveman, index récap A→D). Nouveau `plugins.md` : bonnes pratiques plugins officiels (actifs/désactivés + règles).
 
 ## audit-claude-archi

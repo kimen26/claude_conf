@@ -4,27 +4,29 @@
 > Principe : les plugins sont lazy (description seule en contexte permanent). Le cout reel = bruit de declenchement,
 > pas la memoire. **Desactiver (`claude plugin disable`) ce qui doublonne ou ne sert pas cette semaine** — reactivable en 1 commande.
 
-## Setup Yann (etat 2026-07-03)
+## Setup Yann (etat 2026-07-03, rev2 : tout actif)
 
-### Actifs
+### Le kit de base (90% de l'usage)
 
-| Plugin | Usage | Declencheur |
+| Plugin | Commande exacte | Quand |
 |---|---|---|
-| `claude-code-setup` | Scanne UN repo → recommande hooks/skills/MCP adaptes. Read-only | "recommend automations for this project" |
-| `skill-creator` | Creer + TESTER un skill (draft → tests subagents → eval → benchmark) | `/plugin` → skill-creator |
-| `claude-md-management` | Audit qualite CLAUDE.md + capture apprentissages fin de session | "audit my CLAUDE.md" · `/revise-claude-md` |
-| `hookify` | Creer un hook depuis un besoin decrit en langage naturel | "hookify..." |
-| `feature-dev` | Workflow feature 7 phases avec 3 sub-agents | `/feature-dev <besoin>` |
-| `caveman` (communautaire JuliusBrussee) | Style reponses compact −65% tokens | `/caveman` |
+| `feature-dev` | `/feature-dev <besoin>` | LE workflow dev : 7 phases guidees, 3 sub-agents (explorer/architect/reviewer) |
+| `claude-code-setup` | "recommend automations for this project" (pas de slash) | 1 fois par nouveau repo |
+| `claude-md-management` | `/revise-claude-md` · "audit my CLAUDE.md" | Fin de session / maintenance memoire projet |
 
-### Desactives (installes, dormants — 0 token)
+Sequence debutant : nouveau repo → recommend automations → `/feature-dev X` → `/revise-claude-md`.
 
-| Plugin | Pourquoi coupe | Reactiver quand |
+### Quand le besoin arrive
+
+| Plugin | Commandes | Quand |
 |---|---|---|
-| `code-review` | Triple doublon : agent `code-reviewer` + `/code-review` natif + caveman-review | jamais probablement |
-| `code-simplifier` | Doublon `/simplify` natif | — |
-| `code-modernization` | Cible legacy JS/Java — pas le quotidien data/SQL | migration/uplift d'un vieux codebase |
-| `frontend-design` | Front ponctuel seulement (n8n-website couvre) | vrai chantier UI/UX (c'est LE top plugin officiel, 277k+ installs) |
+| `skill-creator` | "help me create a skill for X" | Meme explication repetee 3 fois → skill (intent → draft → test → eval) |
+| `hookify` | `/hookify` · `/hookify:list` · `/hookify:configure` · `/hookify:help` | "Bloque-moi ca a chaque fois" → hook. Sait analyser la conversation |
+| `code-review` | `/code-review` | Review de diff/PR. NB : doublonne agent `code-reviewer` + caveman-review — choisir UN par review |
+| `code-simplifier` | agent (pas de slash) | Simplifier du code existant. NB : `/simplify` natif fait proche |
+| `code-modernization` | `/modernize-assess` · `-map` · `-brief` · `-extract-rules` · `-preflight` · `-transform` · `-uplift` · `-harden` · `-reimagine` · `-status` | Migration/uplift legacy — pipeline complet en 10 commandes |
+| `frontend-design` | skill auto (pas de slash) | Chantier UI/UX — LE top plugin officiel (277k+ installs) |
+| `caveman` (communautaire JuliusBrussee) | `/caveman` · `/caveman-stats` | Style compact −65% tokens |
 
 ## Regles
 
