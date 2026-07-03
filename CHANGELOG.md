@@ -7,6 +7,9 @@ La machine d'origine `(perso|taff)` indique d'où vient la version la plus à jo
 
 ---
 
+## claude-infra
+- 2026-07-03 (taff) — v2 : `application.md` (module d'écriture unique — corbeille manuelle, double aval, log) + grille de décision 3-questions + triage orphelins repris de `CheiKh`. CheiKh reste séparé (scope pipeline métier).
+
 ## Sync-Skills-github-ProPerso
 - 2026-07-03 (taff) — `push.sh` : garde-fou CHANGELOG (bloque push sans entrée datée du jour pour le skill — règle 7 forcée par le script) + préservation de l'édition CHANGELOG face au `reset --hard` d'ensure-workspace.
 

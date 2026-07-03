@@ -1,6 +1,6 @@
 ---
 name: claude-infra
-description: "Infra Claude Code complete — audit d'architecture (CLAUDE.md, skills, agents, hooks, rules, memory vs doc officielle Anthropic), nettoyage GED (orphelins, liens morts, frontmatters casses, doublons semantiques, knowledge rot), setup/wizard de config, routage vers plugins officiels. Auto-trigger sur : audit claude.md, challenger structure, refonte claude, ou mettre, claude.md vs skill/rules/index, passe le Roborock, nettoie la GED, fichiers orphelins, liens morts, knowledge rot, audite ma config, challenge-local, setup claude, quel skill utiliser, quel outil pour, cycle de vie config, cartographie claude, etat des lieux config."
+description: "Infra Claude Code complete — audit d'architecture (CLAUDE.md, skills, agents, hooks, rules, memory vs doc officielle Anthropic), nettoyage GED (orphelins, liens morts, frontmatters casses, doublons semantiques, knowledge rot), application post-audit (corbeille manuelle, double aval), setup/wizard de config, routage vers plugins officiels. Auto-trigger sur : audit claude.md, challenger structure, refonte claude, ou mettre, claude.md vs skill/rules/index, passe le Roborock, nettoie la GED, fichiers orphelins, liens morts, knowledge rot, audite ma config, challenge-local, setup claude, applique le nettoyage, quel skill utiliser, quel outil pour, cycle de vie config, cartographie claude, etat des lieux config."
 allowed-tools: WebFetch Read Glob Grep Bash
 ---
 
@@ -14,6 +14,7 @@ Skill parapluie. Identifier le besoin dans la table, charger UNIQUEMENT le modul
 |---|---|---|
 | Auditer l'archi Claude vs doc officielle ("où mettre X", "claude.md vs skill") | `references/audit-archi.md` | + `refresh-doc.md` obligatoire |
 | Nettoyer / Roborock (orphelins, liens morts, doublons, rot) | `references/nettoyage.md` | checks-*.md à la demande |
+| **Appliquer un rapport d'audit validé** (suppression, archivage) | `references/application.md` | uniquement après rapport + validation explicite |
 | Setup / wizard config perso | `references/setup-wizard.md` | manuel, questionnaire |
 | **Hygiène d'un CLAUDE.md** (qualité, sync codebase) | → plugin officiel `claude-md-management` ("audit my CLAUDE.md") | délégué |
 | **Capturer apprentissages fin de session** | → `/revise-claude-md` (même plugin) | délégué |
@@ -27,7 +28,7 @@ Skill parapluie. Identifier le besoin dans la table, charger UNIQUEMENT le modul
 
 ## Règles non négociables
 
-1. **Audits = lecture seule.** Aucun module de ce skill n'écrit. Application des correctifs = toi, après validation explicite de l'utilisateur, hors de ce skill.
+1. **Audits = lecture seule.** `audit-archi.md`, `nettoyage.md`, `setup-wizard.md` (phase audit) n'écrivent jamais. Seul `application.md` écrit — et seulement après un rapport existant + validation explicite (double aval, corbeille manuelle pour le risqué, traçabilité obligatoire).
 2. **Refresh doc avant audit archi.** La doc Anthropic bouge — `references/refresh-doc.md` d'abord, jamais confiance aux chiffres gravés.
 3. **Étiquetage OFFICIEL vs IDÉE** (voir audit-archi.md) : toute reco est sourcée `[OFFICIEL ✓]` ou marquée `💡 [IDÉE — non officiel]`.
 4. **Un besoin = un module.** Doute entre deux → demander à l'utilisateur, pas cumuler.
@@ -40,7 +41,7 @@ Skill parapluie. Identifier le besoin dans la table, charger UNIQUEMENT le modul
 
 ## Maintenance du skill (procédure MAJ)
 
-**Version : 2026-07-03** (fusion initiale : cycle + audit-claude-archi + roborock-challenge + challenge-local).
+**Version : 2026-07-03b** (v1 fusion 4 skills ; v2 intègre grille de décision + triage orphelins + module application repris de CheiKh).
 
 3 niveaux de fraîcheur, 3 mécanismes distincts :
 
@@ -60,4 +61,5 @@ Skill parapluie. Identifier le besoin dans la table, charger UNIQUEMENT le modul
 
 ### Changelog
 
-- 2026-07-03 : création (fusion 4 skills, délégation plugins officiels claude-md-management / claude-code-setup / skill-creator / hookify).
+- 2026-07-03b : ajout `references/application.md` (module d'écriture, seul du skill) + grille de décision 3-questions et triage orphelins dans `nettoyage.md`. Repris de `CheiKh` (sentinelle/stratège) après comparaison — CheiKh reste séparé (scope pipeline métier, hors config Claude).
+- 2026-07-03a : création (fusion 4 skills, délégation plugins officiels claude-md-management / claude-code-setup / skill-creator / hookify).

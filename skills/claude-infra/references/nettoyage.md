@@ -229,6 +229,8 @@ Verdict par orphelin :
 
 Voir [report-template.md](report-template.md) pour le gabarit complet.
 
+**Après le rapport** : Roborock n'applique rien (audit pur). Pour transformer le rapport validé en actions concrètes (suppression, archivage), voir [application.md](application.md).
+
 Structure agrégée :
 
 ```
@@ -266,6 +268,35 @@ Structure agrégée :
 | 🟠 HAUTE | Information fausse ou trompeuse activement utilisée | MEMORY.md cite fichier inexistant, INDEX.md décalé |
 | 🟡 MOYENNE | Friction modérée, à corriger sans urgence | Skill description vague, doublon sémantique |
 | 🟢 BASSE | Cosmétique ou dette future | Fichier orphelin probable mais peut-être brouillon |
+
+### Grille de décision — écart aux normes (pas juste orphelins)
+
+Avant de classer un écart CRITIQUE/HAUTE/MOYENNE/BASSE, poser 3 questions (évite le jugement subjectif) :
+
+1. **Ça fonctionne ?** Si oui, l'écart peut être un détail.
+2. **Y a-t-il une raison qui le justifie ?** Contrainte, héritage, choix conscient documenté.
+3. **Le coût de l'écart dépasse-t-il son bénéfice ?** Friction, dette, risque.
+
+| (1) Fonctionne | (2) Justifié | (3) Coût > bénéfice | Verdict |
+|---|---|---|---|
+| oui | oui | non | **Toléré** — mention informative seulement |
+| oui | non | non | **BASSE/MOYENNE** — suggérer, ne pas imposer |
+| non | — | — | **HAUTE/CRITIQUE** — argumenter le changement |
+| — | — | oui | **HAUTE/CRITIQUE** — argumenter le changement |
+
+Toujours argumenter avec l'impact attendu, jamais imposer.
+
+### Triage des orphelins (avant de reporter en Phase 7)
+
+Ne pas se contenter de "orphelin, à qualifier" — trier en 3 catégories pour que la décision d'application (voir `application.md`) soit immédiate :
+
+| Catégorie | Définition | Exemple |
+|---|---|---|
+| **Trace temporaire** | Run avorté, draft jetable, sans valeur de rétention | `tmp_*`, brouillon de session |
+| **Archive volontaire** | Utile historiquement, à garder mais hors circuit actif | Version figée, exemple de référence |
+| **Orphelin d'itération** | Était utilisé avant, refactor en cours, à arbitrer | Ancien skill remplacé, référence pas encore migrée |
+
+Décision **par catégorie, jamais en bloc** — voir `application.md` pour le protocole complet une fois le rapport validé.
 
 
 ## Anti-patterns Roborock
