@@ -2,7 +2,9 @@
 
 > Les plugins se réinstallent depuis leur marketplace, jamais par sync de fichiers
 > (sinon plus de MAJ). Ce fichier = la liste de référence, tenue à jour à chaque
-> ajout/retrait sur l'un des PC. État : 2026-09-03, PC perso.
+> ajout/retrait sur l'un des PC. État : 2026-09-03 (rev b), PC perso.
+> Retirés le 2026-09-03 : pr-review-toolkit (doublon de /code-review intégré),
+> security-guidance (remplacé par claude-security). Ne pas réinstaller.
 
 ## Marketplaces
 
@@ -18,11 +20,12 @@ claude plugin install caveman@caveman                              # économie t
 claude plugin install skill-creator@claude-plugins-official        # créer/tester des skills
 claude plugin install hookify@claude-plugins-official              # créer des hooks depuis la conversation
 claude plugin install commit-commands@claude-plugins-official      # /commit, /commit-push-pr, /clean_gone
-claude plugin install pr-review-toolkit@claude-plugins-official    # /review-pr + 5 agents de review
 claude plugin install claude-md-management@claude-plugins-official # audit CLAUDE.md, /revise-claude-md
 claude plugin install claude-code-setup@claude-plugins-official    # recommandeur d'automations
 claude plugin install frontend-design@claude-plugins-official      # direction visuelle UI
-claude plugin install security-guidance@claude-plugins-official    # garde-fous sécu
+claude plugin install claude-security@claude-plugins-official      # scan sécu profond (findings challengés, patchs vérifiés)
+claude plugin install pyright-lsp@claude-plugins-official          # LSP Python (symboles, types, gain tokens)
+claude plugin install typescript-lsp@claude-plugins-official       # LSP JS/TS (tsserver, marche sur JS vanilla)
 claude plugin install telegram@claude-plugins-official             # relais Telegram
 ```
 
