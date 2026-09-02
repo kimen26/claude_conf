@@ -23,15 +23,20 @@ description: "Socle de démarrage d'un projet Claude Code selon la méthode Yann
 - [ ] 1. git init + .gitignore (gabarit ci-dessous : .env, inbox/, _a_supprimer/)
 - [ ] 2. CLAUDE.md racine depuis references/gabarit-claude-md.md — remplir mission,
         routage, invariants. Viser < 100 lignes AU DÉPART (ça grossira bien assez vite)
-- [ ] 3. memory/ : MEMORY.md (état) + TODO.md (lanes) + DECISIONS.md (D-NNN) +
-        LESSONS.md (L-NNN) — CHANGELOG.md quand il y aura des releases
+- [ ] 3. memory/ : le quintette complet — MEMORY.md (état) + TODO.md (lanes) +
+        DECISIONS.md (D-NNN) + LESSONS.md (L-NNN) + CHANGELOG.md (releases,
+        se remplit en vidant les lanes terminées)
 - [ ] 4. Hooks de base : copier depuis IArtcane/.claude/hooks/ →
         garde-git-large.py (refuse git add -A) + garde-secrets.py (refuse toute
         commande dont la sortie exposerait un .env) ; les déclarer dans
         .claude/settings.json ; TESTER dans les deux sens (bloque le mauvais,
         laisse passer le légitime)
 - [ ] 5. Première porte de vérification : au minimum un check syntaxe/lint adapté
-        à la stack, listé dans la table des portes du CLAUDE.md
+        à la stack, listé dans la table des portes du CLAUDE.md. Dès qu'il y a un
+        écran : une recette visuelle (Playwright — captures mobile + desktop, échoue
+        sur erreur console) ; dès qu'il y a un pipeline : des tests hors-ligne (.py/.mjs).
+        Et la règle d'or : un critère VISUEL se valide en OUVRANT les captures —
+        un log de succès prouve que le code a tourné, jamais que l'œil voit juste
 - [ ] 6. Premier commit conventionnel : `chore: socle projet`
 ```
 
@@ -39,13 +44,16 @@ description: "Socle de démarrage d'un projet Claude Code selon la méthode Yann
 
 - Pas de skills projet au départ — un skill naît quand un savoir-faire a servi 2 fois.
 - Pas d'agents projet au départ — même règle.
-- Pas d'usine handoffs au départ — elle se justifie à partir de plusieurs sessions parallèles.
+- Pas d'usine handoffs au départ — elle se justifie à partir de plusieurs sessions
+  parallèles. Le jour où : `references/protocole-handoffs.md` (squelette portable).
+  Les briefs terminés s'archivent tels quels — on ne recontrôle jamais le passé.
 - Pas de miroir AGENTS.md sauf usage bi-outil réel (Claude + Kimi).
 
 ## Gabarits
 
 - `references/gabarit-claude-md.md` — CLAUDE.md racine à trous
 - `references/gabarit-gitignore.md` — .gitignore + memory/ fichiers de départ
+- `references/protocole-handoffs.md` — l'usine de dev, quand elle se justifie
 
 ## Règles associées (globales, déjà en place)
 
