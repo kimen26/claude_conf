@@ -55,6 +55,16 @@ description: "Socle de démarrage d'un projet Claude Code selon la méthode Yann
 - `references/gabarit-gitignore.md` — .gitignore + memory/ fichiers de départ
 - `references/protocole-handoffs.md` — l'usine de dev, quand elle se justifie
 
+## Outillage machine (une fois par PC, jamais par projet)
+
+Les plugins ne se copient pas via le sync — ils s'installent depuis leur marketplace :
+
+- **caveman** (`claude plugin marketplace add JuliusBrussee/caveman` puis
+  `claude plugin install caveman@caveman`) — économie de tokens : sorties compressées,
+  subagents cavecrew (retours ~-60%), `caveman-compress` pour les fichiers mémoire.
+- Optionnels selon stack : **serena** (navigation LSP par symboles, évite de lire des
+  fichiers entiers) et **context7** (doc de lib ciblée) — marketplace officielle.
+
 ## Règles associées (globales, déjà en place)
 
 - `~/.claude/rules/memoire-projet.md` — le quintette memory/, compteurs partagés D-NNN/L-NNN
