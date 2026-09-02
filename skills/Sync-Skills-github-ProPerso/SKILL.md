@@ -5,7 +5,7 @@ description: Synchroniser les skills Claude Code entre PC pro et PC perso via le
 
 # Sync-Skills-github-ProPerso
 
-> Sync manuelle assistée des skills `~/.claude/skills/` entre PC pro et PC perso, via le repo `kimen26/claude_conf`.
+> Sync manuelle assistée des skills `~/.claude/skills/` ET des rules `~/.claude/rules/` entre PC pro et PC perso, via le repo `kimen26/claude_conf` (`skills/` + `rules/`). Les rules se copient telles quelles dans `~/.claude/rules/` au pull (2026-09-03).
 
 ## 🎯 Quand ce skill se déclenche
 
