@@ -49,3 +49,4 @@ La machine d'origine `(perso|taff)` indique d'où vient la version la plus à jo
 - claude-code-mastery : RETIRÉ (remplacé par l'agent officiel claude-code-guide, à jour en continu)
 - Sync-Skills-github-ProPerso : `impact` ajouté à la liste PRIVÉS (contenu Infopro)
 - nouveau-projet : NOUVEAU — socle de démarrage projet (CLAUDE.md < 100 l., quintette memory/, portes de vérification, hooks de base)
+- rules/ : NOUVEAU dossier au sync — memoire-projet.md (quintette memory/, D-NNN/L-NNN) + interaction-style.md (questions en texte). À copier dans ~/.claude/rules/ sur l'autre PC.
