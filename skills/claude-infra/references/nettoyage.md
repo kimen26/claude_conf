@@ -15,7 +15,7 @@
 
 ## Quand NE PAS invoquer
 
-- Audit de **code** → utiliser `cheikh` (flux JS, dépendances script, console.log)
+- Audit de **code** → hors périmètre Roborock (utiliser les portes de vérification du projet)
 - Audit **PMO sémantique fond** pôle B → utiliser `/pole-b-pmo-audit`
 - Audit **PMO sémantique fond** jeu → utiliser `/pole-a-pmo-audit`
 - Audit **forme** d'un pôle → utiliser `/pole-b-archiviste-audit` ou `/pole-a-archiviste-audit`
@@ -318,7 +318,7 @@ Décision **par catégorie, jamais en bloc** — voir `application.md` pour le p
 
 Par défaut, Roborock ignore le code. Si l'utilisateur dit "et le code aussi" ou "étend au code de X" :
 1. Ajouter le scope au périmètre Phase 0
-2. Lancer `cheikh` en parallèle (skill code/projet) plutôt que dupliquer ses checks
+2. Utiliser les outils de vérification du projet (check-*.mjs, linters) plutôt que dupliquer leurs checks
 3. Agréger les deux rapports dans la synthèse finale
 
 

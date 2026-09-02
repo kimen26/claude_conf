@@ -43,3 +43,9 @@ La machine d'origine `(perso|taff)` indique d'où vient la version la plus à jo
 ---
 
 > ⚠️ Convention de nommage en cours de standardisation : `<métier>-<tâche>` (ex. `pmo-design`, `pmo-challenge`, `roborock-challenge`). Le dossier `CheiKh/` (casse + imbrication) reste à reconcilier en `cheikh-architecte` / `cheikh-sentinelle` / `cheikh-stratege` lors d'une prochaine passe.
+
+## 2026-09-03 — Roborock + socle (PC perso)
+- claude-infra 2026-09-02 : routeur nettoyé (CheiKh supprimé, mastery → agent officiel claude-code-guide), repos.md rapatrié dans references/
+- claude-code-mastery : RETIRÉ (remplacé par l'agent officiel claude-code-guide, à jour en continu)
+- Sync-Skills-github-ProPerso : `impact` ajouté à la liste PRIVÉS (contenu Infopro)
+- nouveau-projet : NOUVEAU — socle de démarrage projet (CLAUDE.md < 100 l., quintette memory/, portes de vérification, hooks de base)

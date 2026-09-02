@@ -21,8 +21,7 @@ Skill parapluie. Identifier le besoin dans la table, charger UNIQUEMENT le modul
 | **Recommander automations pour UN repo** | → plugin officiel `claude-code-setup` ("recommend automations") | délégué |
 | **Créer/tester un skill** | → plugin officiel `skill-creator` | délégué |
 | **Créer un hook** | → plugin officiel `hookify` | délégué |
-| Veille écosystème (repos, outils) | → skill `claude-code-mastery` (`repos.md`) | délégué |
-| Process projet IA (hors infra Claude) | → skill `CheiKh` (architecte/sentinelle/stratege) | hors périmètre |
+| Veille écosystème (repos, outils) | → agent officiel `claude-code-guide` (doc live) + `references/repos.md` local | délégué |
 | Multi-agents / PMO | → skills `pmo-design` / `pmo-challenge` | hors périmètre |
 | Sync pro↔perso | → skill `Sync-Skills-github-ProPerso` | hors périmètre |
 
@@ -37,11 +36,11 @@ Skill parapluie. Identifier le besoin dans la table, charger UNIQUEMENT le modul
 ## Canon officiel (source unique)
 
 - Doc live : URLs canoniques dans `references/refresh-doc.md`
-- Repos de référence : `~/.claude/skills/claude-code-mastery/repos.md` (catalogue A/B/C/D + veille datée)
+- Repos de référence : `references/repos.md` (rapatrié de claude-code-mastery, 2026-09-02)
 
 ## Maintenance du skill (procédure MAJ)
 
-**Version : 2026-07-03b** (v1 fusion 4 skills ; v2 intègre grille de décision + triage orphelins + module application repris de CheiKh).
+**Version : 2026-09-02** (v1 fusion 4 skills ; v2 intègre grille de décision + triage orphelins + module application repris de CheiKh).
 
 3 niveaux de fraîcheur, 3 mécanismes distincts :
 
@@ -60,6 +59,8 @@ Skill parapluie. Identifier le besoin dans la table, charger UNIQUEMENT le modul
 5. Nouveau plugin officiel installé/retiré → vérifier les lignes "délégué" du routeur.
 
 ### Changelog
+
+- 2026-09-02 : Roborock appliqué — CheiKh supprimé (délégation retirée), claude-code-mastery remplacé par agent officiel claude-code-guide, repos.md rapatrié dans references/.
 
 - 2026-07-03b : ajout `references/application.md` (module d'écriture, seul du skill) + grille de décision 3-questions et triage orphelins dans `nettoyage.md`. Repris de `CheiKh` (sentinelle/stratège) après comparaison — CheiKh reste séparé (scope pipeline métier, hors config Claude).
 - 2026-07-03a : création (fusion 4 skills, délégation plugins officiels claude-md-management / claude-code-setup / skill-creator / hookify).

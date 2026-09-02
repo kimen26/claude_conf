@@ -25,6 +25,7 @@ netskope-ssl            # Chemins de certificats Netskope corpo
 relecteur-fiches        # Contenu projet SAN DOKU interne
 snowflake-snow-cli      # Contient des références SANDBOX Infopro
 qwen3-tts               # Contient potentiellement des clés API perso
+impact                  # Famille pédagogie/communication Infopro Digital
 Sync-Skills-github-ProPerso  # ⚠️ EXCEPTION : peut être poussé (cf. ci-dessous)
 ```
 
@@ -32,12 +33,14 @@ Sync-Skills-github-ProPerso  # ⚠️ EXCEPTION : peut être poussé (cf. ci-des
 
 ## 📁 Configuration
 
+> **Chemins dynamiques** — indépendants du nom d'utilisateur (PC pro `yann.ponaire`, PC perso `kimen`, ou autre). Les scripts résolvent tout via `$HOME`. Ne jamais hardcoder un chemin `C:\Users\<nom>\`.
+
 ```
-LOCAL_SKILLS_DIR  = C:\Users\yann.ponaire\.claude\skills\
+LOCAL_SKILLS_DIR  = $HOME/.claude/skills/                       # ~/.claude/skills/
 REPO_URL_SSH      = git@github.com:kimen26/claude_conf.git
 REPO_URL_HTTPS    = https://github.com/kimen26/claude_conf.git
-REPO_SUBFOLDER    = skills/                          # chemin dans le repo
-WORKSPACE         = C:\Users\yann.ponaire\.claude\skills-sync-workspace\claude_conf\
+REPO_SUBFOLDER    = skills/                                     # chemin dans le repo
+WORKSPACE         = $HOME/.claude/skills-sync-workspace/claude_conf/    # ~/.claude/skills-sync-workspace/claude_conf/
 ```
 
 > **Auth GitHub** : tenter SSH d'abord (clé `~/.ssh/id_ed25519` + `ssh.github.com:443` pour Netskope). Si Permission denied → fallback HTTPS avec credential manager Windows.
@@ -112,7 +115,7 @@ But : aperçu rapide.
    ⚠️ Tu vas écraser la version DISTANTE (GitHub) du skill 'impact'.
    
    Diff: SKILL.md (+12/-3), storytelling.md (+5/-0)
-   Commit sera fait sous: Yann PONAIRE <yann.ponaire@infopro-digital.com>
+   Commit sera fait sous: <identité git locale — `git config user.name` / `user.email`>
    
    Confirmer le push ? (oui/non)
    ```
