@@ -34,8 +34,11 @@ description: "Socle de démarrage d'un projet Claude Code selon la méthode Yann
         TESTER dans les deux sens — recette : references/hooks/INSTALL.md
 - [ ] 5. Première porte de vérification : au minimum un check syntaxe/lint adapté
         à la stack, listé dans la table des portes du CLAUDE.md. Dès qu'il y a un
-        écran : une recette visuelle (Playwright — captures mobile + desktop, échoue
-        sur erreur console) ; dès qu'il y a un pipeline : des tests hors-ligne (.py/.mjs).
+        écran : la recette visuelle livrée avec ce skill →
+        cp ~/.claude/skills/nouveau-projet/references/recette-visuelle.py scripts/
+        (Playwright : mobile + desktop, échoue sur erreur console / pageerror /
+        HTTP>=400 / sélecteur absent ; `--auth state.json` pour le SSO) ;
+        dès qu'il y a un pipeline : des tests hors-ligne (.py/.mjs).
         Et la règle d'or : un critère VISUEL se valide en OUVRANT les captures —
         un log de succès prouve que le code a tourné, jamais que l'œil voit juste
 - [ ] 6. Premier commit conventionnel : `chore: socle projet`
@@ -46,8 +49,10 @@ description: "Socle de démarrage d'un projet Claude Code selon la méthode Yann
 - Pas de skills projet au départ — un skill naît quand un savoir-faire a servi 2 fois.
 - Pas d'agents projet au départ — même règle.
 - Pas d'usine handoffs au départ — elle se justifie à partir de plusieurs sessions
-  parallèles. Le jour où : `references/protocole-handoffs.md` (squelette portable).
-  Les briefs terminés s'archivent tels quels — on ne recontrôle jamais le passé.
+  parallèles. Le jour où : `references/protocole-handoffs.md` (les règles) +
+  `references/handoffs/` (`_template.md` du brief, `handoff-check.py` anti-collision,
+  `README.md` de mise en place). Les briefs terminés s'archivent tels quels — on ne
+  recontrôle jamais le passé.
 - Pas de miroir AGENTS.md sauf usage bi-outil réel (Claude + Kimi).
 
 ## Gabarits
@@ -56,6 +61,8 @@ description: "Socle de démarrage d'un projet Claude Code selon la méthode Yann
 - `references/gabarit-gitignore.md` — .gitignore + memory/ fichiers de départ
 - `references/protocole-handoffs.md` — l'usine de dev, quand elle se justifie
 - `references/hooks/` — `garde-git-large.py`, `garde-secrets.py` + `INSTALL.md` (recette et tests)
+- `references/recette-visuelle.py` — porte visuelle Playwright, prête à copier dans `scripts/`
+- `references/handoffs/` — `_template.md`, `handoff-check.py`, `README.md`
 
 ## Outillage machine (une fois par PC, jamais par projet)
 
@@ -73,4 +80,4 @@ Les plugins ne se copient pas via le sync — ils s'installent depuis leur marke
 - `~/.claude/rules/interaction-style.md` — questions en texte, jamais de formulaire
 - CLAUDE.md global — simplicity first, commits conventionnels, jamais de secret en dur
 
-_Créé 2026-09-03 (Roborock + refonte socle). 2026-09-03b : hooks embarqués dans le skill, plus de chemin machine. Sync : kimen26/claude_conf._
+_Créé 2026-09-03 (Roborock + refonte socle). 2026-09-03b : hooks embarqués dans le skill, plus de chemin machine. 2026-09-03c : recette-visuelle.py + handoffs/ (template, check, README) livrés et testés. Sync : kimen26/claude_conf._

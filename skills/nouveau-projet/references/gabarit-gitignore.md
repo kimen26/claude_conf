@@ -8,6 +8,10 @@
 !*.env.example
 inbox/
 _a_supprimer/
+_corbeille*/
+recette/                 # captures de la recette visuelle
+state.json               # storage state Playwright (SSO) — jamais commité
+.claude/settings.local.json
 node_modules/
 __pycache__/
 dist/

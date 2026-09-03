@@ -25,13 +25,15 @@ Un fichier `docs/handoffs/HO-NNN-<titre>.md` par chantier, avec au minimum :
 
 - **Rien ne dépasse des fichiers autorisés.** Un doute = on bloque et on demande, jamais « je corrige au passage ».
 - **L'index git est partagé** entre sessions : commits ciblés (`git add <chemins>`, jamais `-A`), et vérifier `git show --stat HEAD` après CHAQUE commit — un add ciblé emporte quand même ce qu'une autre session a stagé.
-- **Un registre** (fichier unique) liste les briefs actifs et leurs fichiers — un script d'anti-collision vaut mieux qu'une promesse (cf. principe : une règle sans commande n'est pas une règle).
+- **Le registre est dérivé, jamais tenu à la main** : `handoff-check.py` le construit depuis les frontmatters et échoue sur collision (cf. principe : une règle sans commande n'est pas une règle).
 - **Revue par le cerveau** avant `fait` : rejouer les portes, ouvrir les captures, graver dans memory/ (décision, leçon, TODO) dans le même commit de revue.
 - **Briefs terminés = archives** : ils gardent leur syntaxe d'époque, on ne les recontrôle pas.
 
 ## Ce qu'il faut construire pour démarrer (dans l'ordre)
 
-1. `docs/handoffs/README.md` — ce protocole adapté au projet
-2. `docs/handoffs/_template.md` — le gabarit de brief
-3. Un check anti-collision (périmètres qui se chevauchent, statuts incohérents)
+Tout est livré dans `handoffs/` à côté de ce fichier — voir `handoffs/README.md` :
+
+1. `docs/handoffs/_template.md` — le gabarit de brief (frontmatter `id` / `statut` / `fichiers` lu par la machine)
+2. `scripts/handoff-check.py` — le registre dérivé + anti-collision (fichier revendiqué par deux briefs actifs, statut hors vocabulaire, id en doublon) → dans la table des portes
+3. `docs/handoffs/README.md` — ce protocole adapté au projet
 4. Optionnel : agents `dev-handoff` (exécute) et `recette-livraison` (vérifie, lecture seule, ne répare jamais)

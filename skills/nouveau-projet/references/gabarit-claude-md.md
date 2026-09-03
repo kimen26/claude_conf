@@ -5,15 +5,16 @@
 
 <2-3 phrases max : quoi, pour qui, où on en est.>
 
-## ACTION OBLIGATOIRE — avant toute réponse
+## Routage — avant toute réponse
 
-| Mots dans la demande | Pôle | Charger |
+| Mots dans la demande | Charger | Contexte (optionnel) |
 |---|---|---|
-| <mots-clés métier A> | <PÔLE A> | <skill ou fichier> |
-| <mots-clés métier B> | <PÔLE B> | <skill ou fichier> |
-| dump · idée brute | INBOX | déposer dans inbox/, demander en texte |
+| <mots-clés métier A> | <skill ou fichier> | <pôle / domaine si multi-domaine> |
+| <mots-clés métier B> | <skill ou fichier> | |
+| dump · idée brute | déposer dans inbox/, demander en texte | INBOX |
 
-Annoncer avant d'agir : « Mode [X] — je charge [Y] puis j'agis. »
+Convention (pas de porte qui la vérifie, donc pas d'« obligatoire ») : annoncer
+« je charge [Y] puis j'agis » — ça rend le routage visible et corrigeable.
 
 ## Invariants (non négociables)
 
@@ -40,6 +41,7 @@ Plan → TodoWrite → Exécution → Vérification → Commit → memory/ grav�
 | memory/TODO.md | file d'attente (lanes) |
 | memory/DECISIONS.md | arbitrages datés D-NNN |
 | memory/LESSONS.md | leçons gravées L-NNN |
+| memory/CHANGELOG.md | capacités livrées, vidé depuis TODO à chaque release |
 ```
 
 **Règles de croissance** : chaque nouvelle règle arrive AVEC sa porte de vérification.
