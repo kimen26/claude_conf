@@ -5,7 +5,7 @@ description: "Socle de démarrage d'un projet Claude Code selon la méthode Yann
 
 # Nouveau projet — le socle
 
-> Distillé de ce qui a marché : IArtcane (usine handoffs, portes de vérification),
+> Distillé de ce qui a marché sur un premier projet (usine handoffs, portes de vérification),
 > le CLAUDE.md global (essence Boris Cherny : court, dense, actionnable),
 > la règle `~/.claude/rules/memoire-projet.md` (quintette memory/).
 > **Simplicity first. Un fichier ne rentre au socle que s'il a fait ses preuves dans 2 projets.**
@@ -26,11 +26,12 @@ description: "Socle de démarrage d'un projet Claude Code selon la méthode Yann
 - [ ] 3. memory/ : le quintette complet — MEMORY.md (état) + TODO.md (lanes) +
         DECISIONS.md (D-NNN) + LESSONS.md (L-NNN) + CHANGELOG.md (releases,
         se remplit en vidant les lanes terminées)
-- [ ] 4. Hooks de base : copier depuis IArtcane/.claude/hooks/ →
-        garde-git-large.py (refuse git add -A) + garde-secrets.py (refuse toute
-        commande dont la sortie exposerait un .env) ; les déclarer dans
-        .claude/settings.json ; TESTER dans les deux sens (bloque le mauvais,
-        laisse passer le légitime)
+- [ ] 4. Hooks de base : livrés AVEC ce skill →
+        cp ~/.claude/skills/nouveau-projet/references/hooks/garde-*.py .claude/hooks/
+        garde-git-large.py (refuse git add -A / commit -a) + garde-secrets.py
+        (refuse toute lecture d'un .env ou dump d'environnement) ; les déclarer
+        dans .claude/settings.json en chemin RELATIF (le hook suit le clone) ;
+        TESTER dans les deux sens — recette : references/hooks/INSTALL.md
 - [ ] 5. Première porte de vérification : au minimum un check syntaxe/lint adapté
         à la stack, listé dans la table des portes du CLAUDE.md. Dès qu'il y a un
         écran : une recette visuelle (Playwright — captures mobile + desktop, échoue
@@ -54,6 +55,7 @@ description: "Socle de démarrage d'un projet Claude Code selon la méthode Yann
 - `references/gabarit-claude-md.md` — CLAUDE.md racine à trous
 - `references/gabarit-gitignore.md` — .gitignore + memory/ fichiers de départ
 - `references/protocole-handoffs.md` — l'usine de dev, quand elle se justifie
+- `references/hooks/` — `garde-git-large.py`, `garde-secrets.py` + `INSTALL.md` (recette et tests)
 
 ## Outillage machine (une fois par PC, jamais par projet)
 
@@ -71,4 +73,4 @@ Les plugins ne se copient pas via le sync — ils s'installent depuis leur marke
 - `~/.claude/rules/interaction-style.md` — questions en texte, jamais de formulaire
 - CLAUDE.md global — simplicity first, commits conventionnels, jamais de secret en dur
 
-_Créé 2026-09-03 (Roborock + refonte socle). Sync : kimen26/claude_conf._
+_Créé 2026-09-03 (Roborock + refonte socle). 2026-09-03b : hooks embarqués dans le skill, plus de chemin machine. Sync : kimen26/claude_conf._

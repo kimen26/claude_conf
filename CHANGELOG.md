@@ -51,3 +51,8 @@ La machine d'origine `(perso|taff)` indique d'où vient la version la plus à jo
 - nouveau-projet : NOUVEAU — socle de démarrage projet (CLAUDE.md < 100 l., quintette memory/, portes de vérification, hooks de base)
 - rules/ : NOUVEAU dossier au sync — memoire-projet.md (quintette memory/, D-NNN/L-NNN) + interaction-style.md (questions en texte). À copier dans ~/.claude/rules/ sur l'autre PC.
 - nouveau-projet v2 : quintette complet (CHANGELOG 5e membre), portes E2E/visuel (Playwright, ouvrir les captures), references/protocole-handoffs.md (usine générique)
+
+## 2026-09-03 — hooks portables + rtk (PC taff)
+- nouveau-projet 2026-09-03b (taff) : hooks `garde-git-large.py` / `garde-secrets.py` embarqués dans `references/hooks/` + `INSTALL.md` (recette, tests deux sens) ; plus aucun chemin machine (IArtcane retiré), protocole-handoffs agnostique
+- PLUGINS.md rev c (taff) : section « Outillage hors plugins » — rtk (proxy compression sorties Bash, 83 % mesuré)
+- rules/memoire-projet.md (taff) : « la convention du projet prime » — pas de second système mémoire dans un repo qui a déjà le sien

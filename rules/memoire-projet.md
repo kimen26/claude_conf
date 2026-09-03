@@ -19,6 +19,10 @@ mais hors de ce quintette : il ne se met pas à jour au fil de l'eau, il se ré�
 
 ## Les règles qui tiennent l'ensemble
 
+**La convention du projet prime.** Un repo qui a déjà sa mémoire (`memoire/decisions.md`,
+`docs/adr/`, un `AGENTS.md` qui dit où écrire…) garde la sienne : on n'y crée jamais un
+second système. Le quintette ci-dessus s'applique aux projets neufs et à ceux qui n'ont rien.
+
 **Une correction humaine non gravée sera refaite.** C'est la seule règle vraiment non
 négociable. Graver AVANT de clore la session, jamais « je le noterai plus tard » — plus tard,
 le contexte est parti. Une leçon coûte deux lignes à écrire et une demi-journée à réapprendre.

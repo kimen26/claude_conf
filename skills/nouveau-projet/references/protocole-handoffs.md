@@ -1,8 +1,9 @@
 # Protocole handoffs — l'usine de dev (version générique)
 
 > À dégainer quand plusieurs sessions travaillent en parallèle sur le même repo.
-> Avant ça : inutile. L'implémentation de référence vit dans IArtcane
-> (skill `handoff`, `docs/handoffs/`, `handoff-check.py`) — ceci est le squelette portable.
+> Avant ça : inutile. Ceci est le squelette portable : chaque projet le décline
+> dans `docs/handoffs/README.md` (protocole adapté), `_template.md` (brief) et un
+> check anti-collision (`handoff-check.py` ou équivalent) — voir la liste en bas.
 
 ## Le principe
 

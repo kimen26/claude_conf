@@ -2,7 +2,7 @@
 
 > Les plugins se réinstallent depuis leur marketplace, jamais par sync de fichiers
 > (sinon plus de MAJ). Ce fichier = la liste de référence, tenue à jour à chaque
-> ajout/retrait sur l'un des PC. État : 2026-09-03 (rev b), PC perso.
+> ajout/retrait sur l'un des PC. État : 2026-09-03 (rev c, +rtk), PC pro.
 > Retirés le 2026-09-03 : pr-review-toolkit (doublon de /code-review intégré),
 > security-guidance (remplacé par claude-security). Ne pas réinstaller.
 
@@ -35,6 +35,23 @@ claude plugin install telegram@claude-plugins-official             # relais Tele
 claude plugin install serena@claude-plugins-official               # navigation LSP par symboles
 claude plugin install context7@claude-plugins-official             # doc de lib ciblée
 ```
+
+## Outillage hors plugins (binaire + hook, une fois par PC)
+
+**rtk** — proxy CLI qui compresse la sortie des commandes Bash AVANT qu'elle
+n'entre dans le contexte (`git status`, `ls`, `cat`, `find`, `grep`…). Mesuré sur
+le PC pro : 1 946 commandes, 3,5 M tokens économisés (83 %). Complément de caveman,
+qui agit sur les sorties du modèle ; rtk agit sur les entrées.
+
+```
+# 1. binaire — release GitHub (rtk-rs/rtk) ou cargo install rtk ; vérifier : rtk --version
+# 2. hook global dans ~/.claude/settings.json :
+#    "PreToolUse": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "rtk hook claude" }] }]
+# 3. bilan : rtk gain
+```
+
+Derrière un proxy SSL d'entreprise, ajouter `--ssl-revoke-best-effort` au curl de
+téléchargement si erreur de révocation schannel.
 
 ## Entretien
 
