@@ -38,7 +38,9 @@ description: "Socle de démarrage d'un projet Claude Code selon la méthode Yann
         cp ~/.claude/skills/nouveau-projet/references/recette-visuelle.py scripts/
         (Playwright : mobile + desktop, échoue sur erreur console / pageerror /
         HTTP>=400 / sélecteur absent ; `--auth state.json` pour le SSO) ;
-        dès qu'il y a un pipeline : des tests hors-ligne (.py/.mjs).
+        dès qu'il y a un pipeline : des tests hors-ligne (.py/.mjs) ;
+        dès que le README annonce des compteurs : `cp ~/.claude/skills/nouveau-projet/
+        references/check-coherence.py tools/` (à adapter — voir Gabarits).
         Et la règle d'or : un critère VISUEL se valide en OUVRANT les captures —
         un log de succès prouve que le code a tourné, jamais que l'œil voit juste
 - [ ] 6. Premier commit conventionnel : `chore: socle projet`
@@ -63,6 +65,14 @@ description: "Socle de démarrage d'un projet Claude Code selon la méthode Yann
 - `references/hooks/` — `garde-git-large.py`, `garde-secrets.py` + `INSTALL.md` (recette et tests)
 - `references/recette-visuelle.py` — porte visuelle Playwright, prête à copier dans `scripts/`
 - `references/handoffs/` — `_template.md`, `handoff-check.py`, `README.md`
+- `references/check-coherence.py` — **porte de cohérence** : recompte tout sur disque
+  (fichiers, entrées de mémoire, compteurs) et signale les écarts avec ce qu'annoncent le
+  README et le CLAUDE.md. À adapter au projet ; garder la mécanique. Un compteur écrit à la
+  main dérive **toujours** : mesuré sur un projet réel, 3 écarts coexistaient (320 vs 326
+  sources, 137 vs 139 rapports, 130 vs 129). Il **dit**, il ne corrige pas — la correction
+  reste éditoriale. **Éprouvé sur un seul projet (IArtscan) : candidat au socle, pas encore
+  membre** — la règle « 2 projets » s'applique ; il s'arrête avec un message clair tant qu'il
+  n'est pas adapté.
 
 ## Accès web (lecture, pilotage, anti-bot)
 
@@ -102,4 +112,4 @@ Les plugins ne se copient pas via le sync — ils s'installent depuis leur marke
 - `~/.claude/rules/interaction-style.md` — questions en texte, jamais de formulaire
 - CLAUDE.md global — simplicity first, commits conventionnels, jamais de secret en dur
 
-_Créé 2026-09-03 (Roborock + refonte socle). 2026-09-03b : hooks embarqués dans le skill, plus de chemin machine. 2026-09-03c : recette-visuelle.py + handoffs/ (template, check, README) livrés et testés. 2026-09-07 : section Accès web (doctrine browser-pilot, ports CDP par projet). Sync : kimen26/claude_conf._
+_Créé 2026-09-03 (Roborock + refonte socle). 2026-09-03b : hooks embarqués dans le skill, plus de chemin machine. 2026-09-03c : recette-visuelle.py + handoffs/ (template, check, README) livrés et testés. 2026-09-07 : section Accès web (doctrine browser-pilot, ports CDP par projet). 2026-09-07b : `check-coherence.py` (porte de cohérence des compteurs, éprouvée sur IArtscan). Sync : kimen26/claude_conf._
