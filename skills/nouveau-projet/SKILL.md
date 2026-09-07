@@ -75,7 +75,10 @@ pour le JS, Brave via CDP pour les sites logués. Au démarrage :
 - réserver un **port CDP et un profil Brave dédiés** au projet (9222 MaxPlay, 9223 IArtcane,
   9224 IArtscan, suivant libre : 9225+, profil `C:/tmp/brave-<projet>`) — jamais partagés ;
 - pas de MCP navigateur (Playwright MCP, Chrome DevTools MCP) par défaut : 13 à 19k tokens
-  de schéma par session, un CLI coûte zéro tant qu'il n'est pas appelé ;
+  de schéma par session. Pour interagir avec une page : `agent-browser` (CLI global,
+  `--headed` passe Turnstile) ; un CLI coûte zéro tant qu'il n'est pas appelé ;
+- CAPTCHA : vrai Chrome visible d'abord, puis un clic humain dans le Brave du projet
+  (session persistante) ; jamais de service de résolution payant ni de proxy résidentiel ;
 - chaque domaine bloqué puis débloqué se grave dans `LESSONS.md` avec la marche qui a marché.
 
 ## Outillage machine (une fois par PC, jamais par projet)
@@ -85,6 +88,9 @@ Les plugins ne se copient pas via le sync — ils s'installent depuis leur marke
 - **caveman** (`claude plugin marketplace add JuliusBrussee/caveman` puis
   `claude plugin install caveman@caveman`) — économie de tokens : sorties compressées,
   subagents cavecrew (retours ~-60%), `caveman-compress` pour les fichiers mémoire.
+- **agent-browser** (`npm install -g agent-browser && agent-browser install`) — pilotage
+  navigateur économe en tokens, voir doctrine `browser-pilot`. Si le shim npm répond
+  « This: command not found », un paquet global `node` fantôme traîne : `npm uninstall -g node`.
 - Optionnels selon stack : **serena** (navigation LSP par symboles, évite de lire des
   fichiers entiers) et **context7** (doc de lib à jour, utile dès que Playwright ou une lib à API mouvante est
   dans la stack — sans rapport avec le pilotage navigateur) — marketplace officielle.
