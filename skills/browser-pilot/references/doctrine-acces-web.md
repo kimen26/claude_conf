@@ -21,9 +21,10 @@
 | Lire une doc publique, une page simple, poser une question dessus | `WebFetch` | Moyen. Résumé par un petit modèle, tronqué à 100 Ko, cache 15 min |
 | Lire le HTML exact, un JSON, un `robots.txt`, un HEAD de déploiement | `curl` | Quasi nul. Aucun token gaspillé, scriptable en boucle |
 | Le HTML arrive mais la donnée semble absente | `curl` + chercher le JSON embarqué | Quasi nul |
-| 403 sans challenge JS (empreinte TLS reconnue) | `curl_cffi` (Python, imite le TLS de Chrome) | Quasi nul. Piste à tester par domaine, pas acquise |
-| Vraie SPA, contenu rendu en JS, 403 avec challenge | `pilot.mjs fetch` (Chromium headless) | Moyen. Un navigateur par appel, quelques secondes |
-| Capture d'écran pleine page | `pilot.mjs shot` | Moyen |
+| 403 sans challenge JS (empreinte TLS reconnue) | `curl_cffi` (Python, imite le TLS de Chrome) | Quasi nul. **Validé** : Catawiki et Bukowskis débloqués |
+| Vraie SPA, contenu rendu en JS, naviguer, cliquer, remplir, capturer | `agent-browser` (CLI, Chrome réel, 200-400 tokens par page) | Faible en tokens. **Défaut pour toute interaction** |
+| Turnstile / « Vérifiez que vous êtes humain » | `agent-browser --headed` | Faible. **Validé** : Chrono24 passe seul en fenêtre visible |
+| Fetch texte ou capture depuis un script Node existant | `pilot.mjs fetch` / `shot` (Chromium headless) | Moyen. Headless se fait bloquer plus souvent que agent-browser |
 | Site logué, CAPTCHA, prompt sur un chat, téléchargement d'image | `pilot.mjs launch` puis `attachToBrave()` (Brave via CDP, profil persistant) | Élevé mais unique : le login se fait une fois à la main, les scripts suivants en profitent |
 | Vérification visuelle rapide sur MON navigateur déjà logué | Claude in Chrome (extension) | Élevé en tokens, à réserver aux sites de confiance |
 | Doc à jour d'une bibliothèque (API Playwright, etc.) | `context7` (MCP) | Sans rapport avec le navigateur, voir plus bas |
@@ -77,7 +78,38 @@ pip install curl_cffi
 python -c "from curl_cffi import requests; r=requests.get('$URL', impersonate='chrome'); print(r.status_code, len(r.text))"
 ```
 
-Statut : **à tester par domaine**, pas une solution acquise.
+Statut : **validé le 2026-09-07** (tableau des tests plus bas). Catawiki passe de 403 à 200, Bukowskis idem avec UA Chrome. Chrono24 reste en 403 (challenge JS), LinkedIn répond 999 (mur de login, rien à voir avec le TLS).
+
+### agent-browser — le défaut pour interagir (installé le 2026-09-07)
+CLI Rust de Vercel Labs, pilote un Chrome réel par CDP, sans Playwright. Chaque commande
+rend un résultat court : `snapshot` = arbre d'accessibilité compact avec refs `@e1`,
+`read` = texte lisible, `click @e2`, `fill`, `screenshot`, `download`. Le navigateur
+reste ouvert entre commandes (daemon), une session nommée par tâche.
+
+```bash
+npm install -g agent-browser && agent-browser install     # une fois par machine
+agent-browser --session s1 open https://exemple.com
+agent-browser --session s1 snapshot                        # refs @eN
+agent-browser --session s1 click @e2
+agent-browser --session s1 read
+agent-browser --session s1 screenshot C:/tmp/page.png
+agent-browser --session s1 close
+agent-browser skills get core                              # doc complète, livrée avec le binaire
+```
+
+Règles : **toujours `--session <nom>`** (la session par défaut est partagée avec tout
+agent de la machine). `--headed` dès qu'un Turnstile apparaît : en fenêtre visible, le
+Chrome réel passe la vérification seul (Chrono24 validé, contenu complet en 10 s).
+`--profile <dossier>` pour un profil persistant si un login doit survivre.
+
+Limites constatées : `--cdp 9222` vers Brave **bloque le CLI** (daemon pendu, à tuer par
+`taskkill //F //IM agent-browser-win32-x64.exe`) : pour le Brave logué, rester sur
+`pilot.mjs attachToBrave()`. Kayak détecte agent-browser et redirige vers sa page bots,
+alors que `curl` obtient la page entière avec les prix : curl d'abord, toujours.
+
+Piège Windows : un paquet npm global `node` fantôme (fichier vide dans
+`~/AppData/Roaming/npm/node_modules/node`) cassait le shim sh de tous les CLI npm
+(« This: command not found »). Corrigé par `npm uninstall -g node`.
 
 ### Playwright headless — `pilot.mjs fetch` / `shot`
 Vrai Chromium, JS exécuté, empreinte normale. Passe la plupart des 403 Cloudflare
@@ -135,9 +167,8 @@ rend l'agent silencieusement aveugle**. Le tester une fois après installation.
 - **robots.txt** : le lire, et distinguer le déclaratif (opt-out TDM) du technique
   (anti-bot). Le premier se respecte, le second se contourne pour un usage personnel.
 
-Notre stack (`pilot.mjs` par-dessus Playwright, zéro MCP navigateur) est alignée sur ces
-recommandations. Candidat à évaluer : `agent-browser` en remplacement de la couche
-`attachToBrave` si l'économie de tokens se confirme sous Windows.
+Notre stack (zéro MCP navigateur, `agent-browser` pour interagir, `pilot.mjs` pour le
+Brave logué, Playwright pour les tests e2e) est alignée sur ces recommandations.
 
 ## Anti-bot : le diagnostic en 5 questions
 
@@ -145,12 +176,53 @@ recommandations. Candidat à évaluer : `agent-browser` en remplacement de la co
 2. 200 mais donnée absente ? Chercher le JSON embarqué (`__NEXT_DATA__`,
    `data-react-props`, JSON-LD, `/api/`). Souvent l'API interne se `curl` directement.
 3. 403 ? Essayer une UA courte (`-A "Mozilla/5.0"`), puis `curl_cffi`.
-4. Toujours 403, ou page vide (challenge JS, SPA) ? `pilot.mjs fetch`.
+4. Toujours 403, ou page vide (challenge JS, SPA) ? `agent-browser --session x open` puis
+   `read` ; Turnstile visible ? relancer avec `--headed`.
 5. Login, CAPTCHA, quota par compte ? `pilot.mjs launch` sur le port du projet, se
    loguer à la main une fois, puis `attachToBrave()`.
 
 Noter dans `LESSONS.md` du projet chaque domaine et la marche qui a fonctionné : le
 diagnostic ne se refait pas deux fois.
+
+## CAPTCHA et challenges : ce qui existe
+
+Trois familles, à essayer dans cet ordre.
+
+1. **Le challenge passe seul dans un vrai Chrome visible.** Turnstile « managed » ne
+   demande souvent rien à un navigateur normal en fenêtre visible avec une empreinte
+   cohérente. Headless ou `curl_cffi` : bloqués. `agent-browser --headed` : passe.
+   Validé sur Chrono24 le 2026-09-07. C'est la réponse pour la majorité des cas.
+2. **Humain dans la boucle, une fois, session persistante.** Si la case ou le CAPTCHA
+   image reste, on l'ouvre dans le Brave du projet (`pilot.mjs launch`), on clique à la
+   main, le profil garde le cookie de clearance et le login. Les scripts suivants
+   s'attachent (`attachToBrave()`) et ne revoient plus le challenge tant que le cookie
+   vit (heures à jours). Même principe pour un SMS, un MFA, un mur de login LinkedIn.
+   C'est la voie normale pour un usage personnel : un clic humain, pas une infrastructure.
+3. **Services de résolution payants** (2captcha, CapSolver, ZenRows). Ils vendent des
+   tokens Turnstile/reCAPTCHA résolus par API. Fonctionnent, mais : payants, zone grise
+   selon les CGU du site, et ils font basculer le projet dans le contournement
+   industriel. **Déconseillé** pour un usage personnel non commercial, pour la même
+   raison que les proxys résidentiels : ça fragilise les accès obtenus de bonne foi.
+
+Ce qui ne marche plus en 2026 : plugins « stealth » Playwright seuls, rotation d'UA
+sans cohérence TLS, headless avec masquage de `navigator.webdriver`. Cloudflare
+recoupe empreinte TLS, comportement et historique du cookie.
+
+## Résultats des tests du 2026-09-07 (référence)
+
+| Site | curl UA courte | curl UA Chrome | curl_cffi | Playwright headless | agent-browser |
+|---|---|---|---|---|---|
+| Bukowskis | 200 | 403 | 200 | non testé | non testé |
+| Catawiki | 403 | 403 | **200** | bloqué (272 car.) | non testé |
+| Chrono24 | 403 | 403 | 403 | bloqué (65 car.) | headless : Turnstile · **headed : 200, contenu complet** |
+| LinkedIn profil public | 200 (titre seulement) | 200 | 999 | non testé | login requis → Brave |
+| Kayak vols | **200, prix dans le HTML** (`window.R9`) | 200 | 200 | non testé | redirigé vers page bots |
+| Grokipedia | 200 | 200 | 200 | 200 (prouvé en juin) | non testé |
+| Auctionet | 200 (`data-react-props`) | 200 | 200 | non testé | non testé |
+
+Leçon : aucun outil ne gagne partout. Kayak tombe à curl et bloque le navigateur ;
+Chrono24 bloque tout sauf le navigateur visible ; Catawiki tombe à curl_cffi. D'où le
+diagnostic en 5 questions, dans l'ordre, et la leçon gravée par domaine.
 
 ## Sources
 
@@ -161,3 +233,7 @@ diagnostic ne se refait pas deux fois.
 - [Playwright CLI vs MCP (Better Stack)](https://betterstack.com/community/guides/ai/playwright-cli-vs-mcp-browser/)
 - [WebFetch vs WebSearch internals (Shilkov)](https://mikhail.io/2025/10/claude-code-web-tools/)
 - [WebFetch truncation, issue anthropics/claude-code #22937](https://github.com/anthropics/claude-code/issues/22937)
+- [Bypass Cloudflare with Playwright 2026 (BrowserStack)](https://www.browserstack.com/guide/playwright-cloudflare)
+- [Human-in-the-loop cloud browsers (Scrapfly)](https://scrapfly.io/blog/posts/human-in-the-loop-cloud-browsers)
+- [Playwright Cloudflare bypass 2026, 3 méthodes qui marchent, 9 qui ne marchent plus](https://humanbrowser.cloud/blog/bypass-cloudflare-playwright-2026)
+- [agent-browser (Vercel Labs)](https://github.com/vercel-labs/agent-browser)

@@ -1,7 +1,6 @@
 ---
 name: browser-pilot
 description: Piloter un navigateur réel (Brave via CDP, ou Chromium headless) pour contourner un 403 anti-bot, récupérer une page rendue en markdown/texte, prendre une capture, ou piloter un site logué (ChatGPT, Grok) depuis un autre script. Contient la doctrine d'accès au web (WebSearch, WebFetch, curl, JSON embarqué, curl_cffi, Playwright, Brave CDP, Claude in Chrome, context7) et le diagnostic anti-bot. Auto-trigger sur piloter le navigateur, Brave CDP, Playwright, contourner 403, anti-bot, scraper, ChatGPT/Grok logué, capture d'écran de page, quel outil web.
-disable-model-invocation: true
 ---
 
 # browser-pilot
@@ -11,9 +10,14 @@ Remplace les implémentations dupliquées (lancement Brave, fetch anti-403, capt
 qui existaient en plusieurs endroits d'un même projet — voir
 `references/migration-maxplay.md` pour la table de correspondance MaxPlay.
 
-`disable-model-invocation: true` : ce skill ne s'auto-déclenche jamais sur simple
-mention dans la conversation. Il s'invoque explicitement par `/browser-pilot` ou en
-important son script — coût zéro tant qu'il n'est pas appelé.
+Depuis le 2026-09-07 le skill s'auto-charge (flag `disable-model-invocation` retiré) :
+la doctrine `references/doctrine-acces-web.md` doit être lue dès qu'un 403, une page JS
+ou un CAPTCHA apparaît. Coût : le corps de ce fichier, seulement quand il se déclenche.
+
+**Pour interagir avec une page (naviguer, cliquer, remplir, capturer), l'outil par défaut
+est `agent-browser`** (CLI global, 200-400 tokens par page, `--headed` passe Turnstile).
+`pilot.mjs` reste pour le fetch anti-403 depuis un script Node et pour le Brave logué
+(`attachToBrave`). Détail et tests : la doctrine.
 
 ## Prérequis
 
