@@ -21,7 +21,7 @@
 | Lire une doc publique, une page simple, poser une question dessus | `WebFetch` | Moyen. Résumé par un petit modèle, tronqué à 100 Ko, cache 15 min |
 | Lire le HTML exact, un JSON, un `robots.txt`, un HEAD de déploiement | `curl` | Quasi nul. Aucun token gaspillé, scriptable en boucle |
 | Le HTML arrive mais la donnée semble absente | `curl` + chercher le JSON embarqué | Quasi nul |
-| 403 sans challenge JS (empreinte TLS reconnue) | `curl_cffi` (Python, imite le TLS de Chrome) | Quasi nul. **Validé** : Catawiki et Bukowskis débloqués |
+| 403 sans challenge JS (empreinte TLS reconnue) | `curl_cffi` — **essayer plusieurs profils** (`chrome`, `safari17_0`, `firefox`) | Quasi nul. **Validé** : Catawiki, Bukowskis, et Chrono24 en profil Safari |
 | Vraie SPA, contenu rendu en JS, naviguer, cliquer, remplir, capturer | `agent-browser` (CLI, Chrome réel, 200-400 tokens par page) | Faible en tokens. **Défaut pour toute interaction** |
 | Turnstile / « Vérifiez que vous êtes humain » | `agent-browser --headed` | Faible. **Validé** : Chrono24 passe seul en fenêtre visible |
 | Fetch texte ou capture depuis un script Node existant | `pilot.mjs fetch` / `shot` (Chromium headless) | Moyen. Headless se fait bloquer plus souvent que agent-browser |
@@ -78,7 +78,16 @@ pip install curl_cffi
 python -c "from curl_cffi import requests; r=requests.get('$URL', impersonate='chrome'); print(r.status_code, len(r.text))"
 ```
 
-Statut : **validé le 2026-09-07** (tableau des tests plus bas). Catawiki passe de 403 à 200, Bukowskis idem avec UA Chrome. Chrono24 reste en 403 (challenge JS), LinkedIn répond 999 (mur de login, rien à voir avec le TLS).
+Statut : **validé le 2026-09-07** (tableau des tests plus bas). Catawiki passe de 403 à 200, Bukowskis idem. **Chrono24 aussi, mais seulement en profil Safari** (`safari17_0` / `safari18_0` / `safari` : 200, ~705 Ko, alors que `chrome`, `firefox135`, `edge101` restent en 403). Contre-vérifié depuis MaxPlay le soir même sur 9 essais espacés : **un profil Safari donné réussit environ 4 fois sur 5**, jamais 5/5 (`safari17_0` a rendu 403 à 2 essais, `safari` à 1, `safari15_5` à tous). Le blocage est donc partiellement aléatoire par requête : **en cas de 403, réessayer avec un autre profil Safari avant de conclure**. LinkedIn répond 999 (mur de login, rien à voir avec le TLS).
+
+⚠️ **Le profil n'est pas un détail : c'est le paramètre décisif.** Essayer au moins un profil de chaque famille avant de conclure à un blocage :
+
+```bash
+for p in chrome safari17_0 safari18_0 firefox135 edge101; do
+  python -c "from curl_cffi import requests as r; x=r.get('$URL',impersonate='$p',timeout=25); "\
+            "print('$p',x.status_code,len(x.text))"
+done
+```
 
 ### agent-browser — le défaut pour interagir (installé le 2026-09-07)
 CLI Rust de Vercel Labs, pilote un Chrome réel par CDP, sans Playwright. Chaque commande
@@ -175,7 +184,7 @@ Brave logué, Playwright pour les tests e2e) est alignée sur ces recommandation
 1. `curl` rend 200 et le HTML contient la donnée ? Terminé.
 2. 200 mais donnée absente ? Chercher le JSON embarqué (`__NEXT_DATA__`,
    `data-react-props`, JSON-LD, `/api/`). Souvent l'API interne se `curl` directement.
-3. 403 ? Essayer une UA courte (`-A "Mozilla/5.0"`), puis `curl_cffi`.
+3. 403 ? Essayer une UA courte (`-A "Mozilla/5.0"`), puis `curl_cffi` — **en balayant les profils** (`chrome`, `safari17_0`, `safari18_0`, `firefox135`, `edge101`, deux essais espacés) : un 403 sur un seul profil ne prouve rien. Un 403 qui varie = empreinte TLS (franchissable ici) ; identique partout = passer au navigateur ; `DNSError` = le domaine ne résout plus, ce n'est pas un anti-bot.
 4. Toujours 403, ou page vide (challenge JS, SPA) ? `agent-browser --session x open` puis
    `read` ; Turnstile visible ? relancer avec `--headed`.
 5. Login, CAPTCHA, quota par compte ? `pilot.mjs launch` sur le port du projet, se
@@ -213,16 +222,38 @@ recoupe empreinte TLS, comportement et historique du cookie.
 | Site | curl UA courte | curl UA Chrome | curl_cffi | Playwright headless | agent-browser |
 |---|---|---|---|---|---|
 | Bukowskis | 200 | 403 | 200 | non testé | non testé |
-| Catawiki | 403 | 403 | **200** | bloqué (272 car.) | non testé |
-| Chrono24 | 403 | 403 | 403 | bloqué (65 car.) | headless : Turnstile · **headed : 200, contenu complet** |
-| LinkedIn profil public | 200 (titre seulement) | 200 | 999 | non testé | login requis → Brave |
+| Catawiki | 403 | 403 | **200** sur les 8 profils testés | bloqué (272 car.) | non testé |
+| Chrono24 | 403 | 403 | **200 en `safari17_0`/`safari18_0` (~4 essais sur 5)**, 403 en `chrome`/`firefox`/`edge` | bloqué (65 car.) | headless : Turnstile · **headed : 200, contenu complet** |
+| Heritage ha.com (page de résultats) | 403 | 403 | 403 sur 8 profils, 4 essais espacés (la page d'accueil, elle, répond 200) | non testé | navigateur requis |
+| LinkedIn profil public | 200 (titre seulement) | 200 | 999 en `chrome`/`safari`, **200 (~500 Ko) en `safari17_0`/`firefox135`/`edge101`** | non testé | contenu complet = login requis → Brave |
 | Kayak vols | **200, prix dans le HTML** (`window.R9`) | 200 | 200 | non testé | redirigé vers page bots |
 | Grokipedia | 200 | 200 | 200 | 200 (prouvé en juin) | non testé |
 | Auctionet | 200 (`data-react-props`) | 200 | 200 | non testé | non testé |
 
 Leçon : aucun outil ne gagne partout. Kayak tombe à curl et bloque le navigateur ;
-Chrono24 bloque tout sauf le navigateur visible ; Catawiki tombe à curl_cffi. D'où le
-diagnostic en 5 questions, dans l'ordre, et la leçon gravée par domaine.
+Catawiki et Bukowskis tombent à curl_cffi. D'où le diagnostic en 5 questions, dans
+l'ordre, et la leçon gravée par domaine.
+
+🔴 **Correction du 2026-09-07 (soir), projet IArtscan — Chrono24 tombe à `curl_cffi`,
+à condition de choisir le bon profil.** Le test initial concluait « 403 » en restant sur
+`impersonate="chrome"`, le défaut. En réalité **`safari15_5`, `safari17_0` et `safari18_0`
+rendent 200 avec ~696 Ko et les prix en clair** (8 900 €, 13 509 €… sur `/rolex/index.htm`),
+annoncé reproductible 5/5 par la session IArtscan — la contre-vérification MaxPlay (9 essais) mesure
+plutôt **4 sur 5 par profil**, et `safari15_5` en 403 constant. Le navigateur visible reste le
+filet de sécurité, plus le premier réflexe.
+
+➡️ **Règle qui en découle : quand `curl_cffi` échoue, essayer au moins un profil de chaque
+famille (`chrome`, `safari17_0`, `safari18_0`, `firefox135`, `edge101`) et, sur les profils qui
+échouent, un second essai espacé : le verdict par requête est en partie aléatoire.** Un 403 sur un profil n'est pas
+un 403 sur le site. Un 403 qui **varie** selon le profil = détection d'empreinte TLS, donc
+franchissable sans navigateur ; un 403 **identique partout** (Heritage `ha.com`) demande le
+navigateur. Et distinguer toujours d'un **DNSError** (domaine qui ne résout plus), qui n'est
+pas un anti-bot.
+
+Cela explique rétrospectivement l'anomalie Bukowskis (403 sur UA Chrome complète, 200 sur UA
+courte) : ce n'est pas l'User-Agent, c'est la **cohérence entre l'UA annoncé et la pile TLS
+réelle**. Une UA Chrome portée par une pile non-Chrome est un signal de bot plus net qu'une
+UA anonyme.
 
 ## Sources
 
