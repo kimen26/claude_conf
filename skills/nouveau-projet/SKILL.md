@@ -64,6 +64,20 @@ description: "Socle de démarrage d'un projet Claude Code selon la méthode Yann
 - `references/recette-visuelle.py` — porte visuelle Playwright, prête à copier dans `scripts/`
 - `references/handoffs/` — `_template.md`, `handoff-check.py`, `README.md`
 
+## Accès web (lecture, pilotage, anti-bot)
+
+Un projet qui touche au web charge le skill global `browser-pilot` et applique sa doctrine
+(`~/.claude/skills/browser-pilot/references/doctrine-acces-web.md`) : **curl d'abord,
+navigateur en dernier**, `WebSearch` pour trouver jamais pour lire, JSON embarqué avant de
+conclure à une SPA, `curl_cffi` contre les 403 par empreinte TLS, `pilot.mjs` (Playwright)
+pour le JS, Brave via CDP pour les sites logués. Au démarrage :
+
+- réserver un **port CDP et un profil Brave dédiés** au projet (9222 MaxPlay, 9223 IArtcane,
+  9224 IArtscan, suivant libre : 9225+, profil `C:/tmp/brave-<projet>`) — jamais partagés ;
+- pas de MCP navigateur (Playwright MCP, Chrome DevTools MCP) par défaut : 13 à 19k tokens
+  de schéma par session, un CLI coûte zéro tant qu'il n'est pas appelé ;
+- chaque domaine bloqué puis débloqué se grave dans `LESSONS.md` avec la marche qui a marché.
+
 ## Outillage machine (une fois par PC, jamais par projet)
 
 Les plugins ne se copient pas via le sync — ils s'installent depuis leur marketplace :
@@ -72,7 +86,9 @@ Les plugins ne se copient pas via le sync — ils s'installent depuis leur marke
   `claude plugin install caveman@caveman`) — économie de tokens : sorties compressées,
   subagents cavecrew (retours ~-60%), `caveman-compress` pour les fichiers mémoire.
 - Optionnels selon stack : **serena** (navigation LSP par symboles, évite de lire des
-  fichiers entiers) et **context7** (doc de lib ciblée) — marketplace officielle.
+  fichiers entiers) et **context7** (doc de lib à jour, utile dès que Playwright ou une lib à API mouvante est
+  dans la stack — sans rapport avec le pilotage navigateur) — marketplace officielle.
+  Un outil déclaré mais jamais testé rend l'agent silencieusement aveugle : le tester une fois.
 
 ## Règles associées (globales, déjà en place)
 
@@ -80,4 +96,4 @@ Les plugins ne se copient pas via le sync — ils s'installent depuis leur marke
 - `~/.claude/rules/interaction-style.md` — questions en texte, jamais de formulaire
 - CLAUDE.md global — simplicity first, commits conventionnels, jamais de secret en dur
 
-_Créé 2026-09-03 (Roborock + refonte socle). 2026-09-03b : hooks embarqués dans le skill, plus de chemin machine. 2026-09-03c : recette-visuelle.py + handoffs/ (template, check, README) livrés et testés. Sync : kimen26/claude_conf._
+_Créé 2026-09-03 (Roborock + refonte socle). 2026-09-03b : hooks embarqués dans le skill, plus de chemin machine. 2026-09-03c : recette-visuelle.py + handoffs/ (template, check, README) livrés et testés. 2026-09-07 : section Accès web (doctrine browser-pilot, ports CDP par projet). Sync : kimen26/claude_conf._
