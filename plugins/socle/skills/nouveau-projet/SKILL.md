@@ -1,6 +1,6 @@
 ---
 name: nouveau-projet
-description: À utiliser pour démarrer un projet neuf (init) ou remettre au pas un projet existant (remise-au-pas) selon le socle de Yann : CLAUDE.md court, quintette memory/, portes, backlog, preuve navigateur.
+description: "À utiliser pour démarrer un projet neuf (init) ou remettre au pas un projet existant (remise-au-pas) selon le socle de Yann : CLAUDE.md court, quintette memory/, portes, backlog, preuve navigateur."
 ---
 
 # Nouveau projet : le socle
@@ -23,7 +23,7 @@ python socle_projet.py init [chemin]
 ```
 
 1. `git init` si absent.
-2. Copie des gabarits **sans jamais écraser** un fichier existant : `CLAUDE.md`, `.gitignore`, `memory/*.md`, `outils/portes.py`, `outils/smoke.py`, `outils/deployer.py`, `backlog/config.yml`, et le shim `outils/preuve_navigateur.py` (3 lignes, voir skill `preuve-navigateur`).
+2. Copie des gabarits **sans jamais écraser** un fichier existant : `CLAUDE.md`, `.gitignore` (avec `secrets*.ps1`), `.env.example` (noms seuls), `memory/*.md`, `outils/portes.py`, `outils/smoke.py`, `outils/deployer.py`, `backlog/config.yml`, et le shim `outils/preuve_navigateur.py` (3 lignes, voir skill `preuve-navigateur`).
 3. `backlog init` si la commande existe, sinon dire `npm i -g backlog.md` (une fois par PC) et créer `backlog/tasks/` à la main.
 4. Premier commit `chore: socle projet`, **par chemins listés** (jamais `git add -A`). `--sans-commit` pour s'en passer.
 5. Remplir ensuite la mission, le routage et les invariants du `CLAUDE.md` (viser < 100 lignes dès le départ).
@@ -36,7 +36,7 @@ python socle_projet.py remise-au-pas [chemin] [--radical]        # simulation, n
 python socle_projet.py remise-au-pas [chemin] [--radical] --oui  # applique, après accord de Yann
 ```
 
-Lance `garde_socle.py --complet` (via `--json`) et traite les écarts dans l'ordre **S-30** (secrets) → **S-10** (.mcp.json) → **S-20** (navigateur hors socle) → **S-01/02/03** (CLAUDE.md, memory/, .gitignore) → **S-50/60** (backlog, portes) → **S-40** (doublons plugin, settings mort).
+Lance d'abord `secrets.py inventaire <projet>` (skill `/socle:secrets`, noms seulement), puis `garde_socle.py --complet` (via `--json`), et traite les écarts dans l'ordre **S-30 à S-35** (secrets, accès Snowflake, snow isolé) → **S-10** (.mcp.json) → **S-20** (navigateur hors socle) → **S-01/02/03** (CLAUDE.md, memory/, .gitignore) → **S-50/60** (backlog, portes) → **S-40** (doublons plugin, settings mort).
 
 - **Chaque geste est confirmé par Yann** : présenter le plan de la simulation, attendre l'accord, relancer avec `--oui`. Jamais supprimer sans confirmation explicite.
 - Le script complète ce qui manque (sans écraser) ; secrets, `.mcp.json` et le reste sont signalés « à traiter à la main » avec le correctif du garde.

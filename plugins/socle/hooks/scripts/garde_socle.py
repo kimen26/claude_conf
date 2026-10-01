@@ -14,19 +14,22 @@ from collections import namedtuple
 
 Ecart = namedtuple("Ecart", "code fichier ligne regle correctif")
 
-GRAVITE = ["S-30", "S-10", "S-20", "S-40", "S-01", "S-02", "S-03", "S-50", "S-60"]
+GRAVITE = ["S-30", "S-31", "S-33", "S-32", "S-34", "S-35", "S-36", "S-10", "S-20", "S-40", "S-01", "S-02", "S-03", "S-50", "S-60"]
 EXCLUS = {".venv", "venv", "node_modules", "_a_supprimer", ".git", ".snowflake", "__pycache__"}
-PROFIL_OK = "c:/tmp/claude/pw-profile"
+PROFIL_OK = "/socle/pw-profile"
 STATUTS = ["Todo", "Ready", "Dev", "Recette", "Relecture", "Valide", "Livre", "Rejete"]
 
-SECRETS = [
-    r"sbp_[0-9a-f]{20,}",
-    r"ghp_[A-Za-z0-9]{20,}",
-    r"glpat-[A-Za-z0-9_-]{15,}",
-    r"SUPABASE_ACCESS_TOKEN=\S+",
-    r"(PASSWORD|MOT_DE_PASSE|TOKEN|SECRET)\s*=\s*['\"][^'\"$]{8,}",
-]
-SECRETS_RE = [re.compile(p) for p in SECRETS]
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import motifs_secrets as ms  # noqa: E402
+
+SECRETS = [i for i, _ in ms.LIGNE_RE]
+SECRETS_RE = [rx for _, rx in ms.LIGNE_RE]
+EXT_S32 = (".py", ".toml", ".yaml", ".yml")
+S32_RE = re.compile(r"SNOWFLAKE_PASSWORD|SNOWFLAKE_PRIVATE_KEY\w*|private_key_path|SNOWFLAKE_PAT(?![A-Za-z_])")
+EXEMPLES = (".example", ".sample", ".template")
+EXT_S36 = (".py", ".ps1", ".md", ".json")
+S36_RE = re.compile(r"(?<![A-Za-z0-9])(?:c:[\\/]+|/c/)tmp(?![A-Za-z0-9_])", re.I)
+EXCLUS_S36 = {"archives"}
 
 
 def plugin_root():
@@ -103,15 +106,39 @@ def _fichiers_suivis(racine):
     return _CACHE[cle]
 
 
+def _parcours(racine):
+    """Tous les fichiers du projet (suivis ou non), dossiers exclus élagués. Mis en cache."""
+    cle = ("parcours", racine)
+    if cle not in _CACHE:
+        out = []
+        for dossier, sous, fichiers in os.walk(racine):
+            sous[:] = [d for d in sous if d not in EXCLUS]
+            for f in fichiers:
+                out.append(os.path.relpath(os.path.join(dossier, f), racine).replace("\\", "/"))
+        _CACHE[cle] = out
+    return _CACHE[cle]
+
+
 def _fichiers_py(racine):
     """Tous les .py du projet (suivis ou non), dossiers exclus élagués."""
-    out = []
-    for dossier, sous, fichiers in os.walk(racine):
-        sous[:] = [d for d in sous if d not in EXCLUS]
-        for f in fichiers:
-            if f.endswith(".py"):
-                out.append(os.path.relpath(os.path.join(dossier, f), racine).replace("\\", "/"))
-    return out
+    return [r for r in _parcours(racine) if r.endswith(".py")]
+
+
+def _est_env(base):
+    return base.startswith(".env") and not base.endswith(EXEMPLES)
+
+
+def _scan_s32(rel):
+    base = os.path.basename(rel)
+    return rel.endswith(EXT_S32) or base.startswith(".env")
+
+
+def _scan_s36(rel):
+    return rel.lower().endswith(EXT_S36) and "plugins/socle/" not in rel.replace("\\", "/")
+
+
+def _scan_extra(rel):
+    return _scan_s32(rel) or _scan_s36(rel)
 
 
 def _cache_fichier(racine):
@@ -187,7 +214,6 @@ def s_10(racine):
     except ValueError:
         return [Ecart("S-10", ".mcp.json", 0, ".mcp.json illisible", "corriger le JSON")]
     out = []
-    ok = re.compile(r"^\$\{[A-Za-z_][A-Za-z0-9_]*(:-[^}]*)?\}$")
     for nom, srv in (data.get("mcpServers") or {}).items():
         if not isinstance(srv, dict):
             continue
@@ -197,16 +223,13 @@ def s_10(racine):
             out.append(Ecart("S-10", ".mcp.json", 0, f"serveur {nom} : npx avec @latest", "épingler une version exacte, ou passer en HTTP"))
         if any("@playwright/mcp" in a for a in [cmd] + args):
             out.append(Ecart("S-10", ".mcp.json", 0, f"serveur {nom} : @playwright/mcp", "utiliser preuve_navigateur, pas le MCP"))
-        for k, v in (srv.get("env") or {}).items():
-            if not ok.match(str(v)):
-                out.append(Ecart("S-10", ".mcp.json", 0, f"serveur {nom} : env {k} en clair", "écrire ${VAR} et mettre la valeur dans .env"))
     return out
 
 
 def _analyser(racine, rel, py):
     """Lit un fichier et rend ses constats bruts : {'s30': [[ligne, motif]], 's20': [[ligne, kind]]}."""
     p = os.path.join(racine, rel)
-    res = {"s30": [], "s20": []}
+    res = {"s30": [], "s20": [], "s32": [], "s36": []}
     try:
         if os.path.getsize(p) > 2_000_000:
             return res
@@ -218,6 +241,8 @@ def _analyser(racine, rel, py):
         return res
     t = b.decode("utf-8", "replace")
     est_lib = os.path.basename(rel) == "preuve_navigateur.py"
+    scan32 = _scan_s32(rel)
+    scan36 = _scan_s36(rel)
     if py and not est_lib:
         if re.search(r"(from|import)\s+playwright", t) and "preuve_navigateur" not in t:
             res["s20"].append([0, "pw"])
@@ -227,12 +252,16 @@ def _analyser(racine, rel, py):
         for k, rx in enumerate(SECRETS_RE):
             if rx.search(l):
                 res["s30"].append([i, SECRETS[k]])
+        if scan36 and S36_RE.search(l):
+            res["s36"].append([i, "tmp"])
+        if scan32 and S32_RE.search(l):
+            res["s32"].append([i, S32_RE.search(l).group(0)])
         if py and not est_lib:
             if "storage_state" in l or "connect_over_cdp" in l:
                 res["s20"].append([i, "st"])
             m = (re.search(r"launch_persistent_context\(\s*[rf]?[\"']([^\"']+)", l)
                  or re.search(r"user_data_dir\s*=\s*[rf]?[\"']([^\"']+)", l))
-            if m and m.group(1).replace("\\", "/").lower() != PROFIL_OK:
+            if m and not m.group(1).replace("\\", "/").lower().endswith(PROFIL_OK):
                 res["s20"].append([i, "pf"])
     return res
 
@@ -243,8 +272,11 @@ def _constats(racine):
         return _CACHE[("constats", racine)]
     suivis = _fichiers_suivis(racine)
     tous = {r: False for r in suivis}
-    for r in _fichiers_py(racine):
-        tous[r] = True
+    for r in _parcours(racine):
+        if r.endswith(".py"):
+            tous[r] = True
+        elif _scan_extra(r):
+            tous.setdefault(r, False)
     for r in suivis:
         if r.endswith(".py") and not _exclu(r):
             tous[r] = True
@@ -255,7 +287,7 @@ def _constats(racine):
             st = os.stat(os.path.join(racine, rel))
         except OSError:
             continue
-        cle = [st.st_size, st.st_mtime_ns, py]
+        cle = [st.st_size, st.st_mtime_ns, py, ms.VERSION]
         old = cache.get(rel)
         if old and old["k"] == cle:
             neuf[rel] = old
@@ -276,7 +308,7 @@ def _constats(racine):
 LIBELLES_S20 = {
     "pw": ("playwright sans preuve_navigateur", "importer preuve_navigateur"),
     "st": ("storage_state/connect_over_cdp interdit", "le SSO vit dans le profil partagé, setup_sso() de preuve_navigateur"),
-    "pf": ("profil persistant hors C:/tmp/claude/pw-profile", "utiliser le profil partagé via preuve_navigateur"),
+    "pf": ("profil persistant hors %LOCALAPPDATA%/socle/pw-profile", "utiliser le profil partagé via preuve_navigateur"),
 }
 
 
@@ -290,16 +322,138 @@ def s_20(racine):
     return out
 
 
+def _ignore_git(racine, rel):
+    """Vrai si git ignore ce chemin (git check-ignore), faux si doute."""
+    try:
+        r = subprocess.run(["git", "check-ignore", "-q", "--", rel], cwd=racine, capture_output=True, timeout=10)
+        return r.returncode == 0
+    except Exception:
+        return False
+
+
 def s_30(racine):
     suivis = set(_fichiers_suivis(racine))
     out = []
     for rel in sorted(suivis):
-        if os.path.basename(rel) == ".env":
+        if _est_env(os.path.basename(rel)):
             out.append(Ecart("S-30", rel, 0, ".env suivi par git", "git rm --cached et l'ajouter au .gitignore"))
+    for rel in sorted(_parcours(racine)):
+        base = os.path.basename(rel)
+        if base.lower().startswith("secrets") and base.lower().endswith(".ps1")                 and (rel in suivis or not _ignore_git(racine, rel)):
+            out.append(Ecart("S-30", rel, 0, f"{base} non ignoré par git", "l'ajouter au .gitignore (secrets*.ps1), puis /socle:secrets"))
+    if os.path.isfile(os.path.join(racine, ".env")) and not os.path.isfile(os.path.join(racine, ".env.example")):
+        out.append(Ecart("S-30", ".env", 0, ".env présent sans .env.example", "créer .env.example (noms seuls, versionné)"))
     for rel, c in _constats(racine).items():
         if rel in suivis:
             for ligne, motif in c["s30"]:
                 out.append(Ecart("S-30", rel, ligne, f"secret probable (motif {motif})", "retirer la valeur, la révoquer, la mettre dans .env"))
+    return out
+
+
+def _json_fichier(chemin):
+    try:
+        return json.loads(_lire(chemin))
+    except ValueError:
+        return None
+
+
+def s_31(racine):
+    """Valeur secrète en clair dans la clé env d'un .claude/settings*.json du projet."""
+    d = os.path.join(racine, ".claude")
+    out = []
+    if not os.path.isdir(d):
+        return out
+    for f in sorted(os.listdir(d)):
+        if not (f.startswith("settings") and f.endswith(".json")):
+            continue
+        data = _json_fichier(os.path.join(d, f))
+        env = data.get("env") if isinstance(data, dict) else None
+        for k, v in (env or {}).items():
+            if ms.valeur_en_clair(k, v):
+                out.append(Ecart("S-31", f".claude/{f}", 0, f"env {k} en clair",
+                                 "/socle:secrets poser NOM, puis référencer en ${NOM}"))
+    return out
+
+
+def s_32(racine):
+    """Auth Snowflake hors connections.toml (mot de passe, clé privée, PAT)."""
+    out = []
+    for rel, c in sorted(_constats(racine).items()):
+        if _exclu(rel):
+            continue
+        for ligne, nom in c.get("s32", []):
+            out.append(Ecart("S-32", rel, ligne, f"{nom} : Snowflake = SSO connections.toml seul",
+                             "ne garder qu'un connection_name, authenticator externalbrowser"))
+    return out
+
+
+def s_33(racine):
+    """Valeur en clair dans les env/headers de .mcp.json, et snowflake-labs-mcp sans keyring."""
+    p = os.path.join(racine, ".mcp.json")
+    if not os.path.isfile(p):
+        return []
+    data = _json_fichier(p)
+    if not isinstance(data, dict):
+        return []
+    out = []
+    for nom, srv in (data.get("mcpServers") or {}).items():
+        if not isinstance(srv, dict):
+            continue
+        for k, v in (srv.get("env") or {}).items():
+            if not ms.REFERENCE.match(str(v)):
+                out.append(Ecart("S-33", ".mcp.json", 0, f"serveur {nom} : env {k} en clair",
+                                 "écrire ${VAR}, la variable étant posée par /socle:secrets poser"))
+        for k, v in (srv.get("headers") or {}).items():
+            if "${" not in str(v):
+                out.append(Ecart("S-33", ".mcp.json", 0, f"serveur {nom} : header {k} en clair",
+                                 "écrire ${VAR}, la variable étant posée par /socle:secrets poser"))
+        args = [str(a) for a in (srv.get("args") or [])]
+        if os.path.basename(str(srv.get("command", ""))).lower().split(".")[0] == "uvx"                 and any("snowflake-labs-mcp" in a for a in args)                 and not any("snowflake-connector-python[secure-local-storage]" in a for a in args):
+            out.append(Ecart("S-33", ".mcp.json", 0, f"serveur {nom} : snowflake-labs-mcp sans keyring (pas de cache SSO)",
+                             'args : ["--with", "snowflake-connector-python[secure-local-storage]", "snowflake-labs-mcp", ...]'))
+    return out
+
+
+def s_34(racine):
+    """Niveau user : chaque connexion de ~/.snowflake/connections.toml est SSO avec cache de token."""
+    p = os.path.join(os.path.expanduser("~"), ".snowflake", "connections.toml")
+    if not os.path.isfile(p):
+        return []
+    out = []
+    for nom, c in ms.analyser_connexions(_lire(p)).items():
+        d = ms.defauts_connexion(c)
+        if d:
+            out.append(Ecart("S-34", "~/.snowflake/connections.toml", 0, f"connexion {nom} non conforme ({'; '.join(d)})",
+                             "authenticator = externalbrowser et client_store_temporary_credential = true, rien d'autre (a faire a la main : le socle ne l'ecrit jamais)"))
+    return out
+
+
+def s_35(racine):
+    """Niveau user : snow s'installe isolé (uv tool, ~/.local/bin), jamais dans Python*/Scripts."""
+    out = []
+    vus = set()
+    for d in os.environ.get("PATH", "").split(os.pathsep):
+        norm = d.replace("\\", "/").rstrip("/").lower()
+        for exe in ("snow.exe", "snow"):
+            p = os.path.join(d, exe)
+            if d and os.path.isfile(p) and p not in vus:
+                vus.add(p)
+                if re.search(r"/python[^/]*/scripts$", norm):
+                    out.append(Ecart("S-35", d, 0, "snow installé dans le Python global (Python*/Scripts)",
+                                     'uv tool install snowflake-cli --native-tls --with "snowflake-connector-python[secure-local-storage]", puis retirer le lanceur résiduel'))
+    return out[:1]
+
+
+def s_36(racine):
+    """C:/tmp interdit : projet, %LOCALAPPDATA%/socle ou scratchpad."""
+    out = []
+    for rel, c in sorted(_constats(racine).items()):
+        parts = set(rel.replace("\\", "/").split("/"))
+        if _exclu(rel) or parts & EXCLUS_S36:
+            continue
+        for ligne, _ in c.get("s36", [])[:3]:
+            out.append(Ecart("S-36", rel, ligne, "référence à C:/tmp (interdit)",
+                             "%LOCALAPPDATA%\\socle (état machine) ou le scratchpad de session"))
     return out
 
 
@@ -351,7 +505,7 @@ def s_60(racine):
             for f in ("portes.py", "smoke.py", "deployer.py") if not os.path.isfile(os.path.join(racine, "outils", f))]
 
 
-CONTROLES = [s_01, s_02, s_03, s_10, s_20, s_30, s_40, s_50, s_60]
+CONTROLES = [s_01, s_02, s_03, s_10, s_20, s_30, s_31, s_32, s_33, s_34, s_35, s_36, s_40, s_50, s_60]
 
 
 def _rang(code):

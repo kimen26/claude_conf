@@ -16,9 +16,16 @@ Redémarrer la session ensuite.
 - `.claude-plugin/plugin.json` : manifeste
 - `hooks/hooks.json` : câblage ; `hooks/scripts/` : session_start, garde_socle, garde_outils, gardes rapatriées
 - `lib/` : bibliothèques partagées, synchronisées vers `${CLAUDE_PLUGIN_DATA}/lib/` au démarrage
-- `rules/` : règles (DIGEST.md injecté au démarrage) · `agents/` (7 agents) · `skills/` (nouveau-projet, tache, livrer, recette-ecran, preuve-navigateur) · `gabarits/` : modèles copiés par `init`
+- `rules/` : règles (DIGEST.md injecté au démarrage) · `agents/` (7 agents) · `skills/` (nouveau-projet, tache, livrer, recette-ecran, preuve-navigateur, secrets) · `gabarits/` : modèles copiés par `init`
 - `tests/` : `python -m pytest plugins/socle/tests`
 Audit manuel : `python hooks/scripts/garde_socle.py --complet [chemin]`.
 
 ## Mettre à jour
 Toute modification du plugin impose un bump de `version` dans `plugin.json` ET `marketplace.json` (même valeur), sinon `claude plugin update` répond « already at the latest version » et le cache garde l'ancien code.
+
+## Secrets
+- Un secret est une variable d'environnement utilisateur, posée par `/socle:secrets poser NOM` ; son nom est au registre `rules/secrets-registre.md`.
+- Jamais dans `settings.json`, `.claude.json`, un `.bak` ou un `secrets.ps1` : les gardes S-30 à S-35 et `garde_outils` le refusent.
+- Projet : `.env` git-ignoré + `.env.example` versionné. MCP : `${NOM}` dans `.mcp.json`. Snowflake : SSO `connections.toml` seul.
+- Commandes : `inventaire`, `verifier`, `poser`, `ssl`, `purger`, `snow`. Doctrine complète : `rules/secrets.md`. Emplacements (`C:/tmp` interdit) : `rules/emplacements.md`.
+- Aucune commande ne lit ni n'affiche une valeur ; `purger` déplace dans `~/.claude/_a_supprimer/`, ne supprime jamais.

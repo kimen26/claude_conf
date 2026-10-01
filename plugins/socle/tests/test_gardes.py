@@ -178,3 +178,232 @@ def test_session_start(tmp_path):
     finally:
         if cree:
             (lib / "README.md").unlink()
+
+
+# ---------------------------------------------------------------- pilier secrets et emplacements
+BS = chr(92)
+GLPAT = "glpat-" + "FAUX0000000000000000"
+MSG_SECRET = "/socle:secrets poser NOM"
+
+
+@pytest.mark.parametrize("outil,ti", [
+    ("Edit", {"file_path": "/home/y/.claude/settings.json", "old_string": "a", "new_string": '"FAUX_TOKEN": "' + GLPAT + '"'}),
+    ("Write", {"file_path": "/home/y/.claude.json", "content": '{"k": "' + GLPAT + '"}'}),
+    ("Write", {"file_path": "/home/y/.claude/settings.json.bak", "content": "GITLAB_PAT = " + "z" * 14}),
+    ("Write", {"file_path": "/home/y/.claude/backups/x.backup", "content": GLPAT}),
+    ("Write", {"file_path": "/home/y/.claude/skills/c/config/secrets.ps1", "content": '$env:X_TOKEN = "' + GLPAT + '"'}),
+])
+def test_garde_outils_secret_dans_fichier_claude(outil, ti):
+    r = garde(outil, **ti)
+    assert r.returncode == 2
+    assert MSG_SECRET in r.stderr and "${NOM}" in r.stderr
+    assert GLPAT not in r.stderr and "FAUX0000" not in r.stderr
+
+
+@pytest.mark.parametrize("cmd", [
+    "Copy-Item settings.json settings.json.bak",
+    "cp ~/.claude/settings.json ~/.claude/settings.json.bak",
+    "copy .claude.json .claude.json.bak",
+    "Copy-Item -Path ~/.claude/settings.json -Destination ~/.claude/settings.json.bak",
+])
+def test_garde_outils_refuse_sauvegarde_de_settings(cmd):
+    r = garde("Bash", command=cmd)
+    assert r.returncode == 2 and "pas de sauvegarde" in r.stderr and "/socle:secrets purger" in r.stderr
+
+
+@pytest.mark.parametrize("outil,ti", [
+    ("Edit", {"file_path": ".env", "old_string": "a", "new_string": "GITLAB_PAT=" + GLPAT}),
+    ("Edit", {"file_path": "/home/y/.claude/settings.json", "old_string": "a",
+              "new_string": '"env": {"GITLAB_PAT": "${GITLAB_PAT}"}'}),
+    ("Bash", {"command": "cp ~/.claude/settings.json.bak ~/.claude/settings.json"}),
+    ("Bash", {"command": "cp a.txt b.txt.bak"}),
+])
+def test_garde_outils_accepte_secrets(outil, ti):
+    r = garde(outil, **ti)
+    assert r.returncode == 0 and r.stderr == ""
+
+
+REFUSES_TMP = [
+    ("Write", {"file_path": "C:/tmp/claude/x.py", "content": "x"}),
+    ("Edit", {"file_path": "C:" + BS + "tmp" + BS + "x.txt", "old_string": "a", "new_string": "b"}),
+    ("Write", {"file_path": "/c/tmp/x.txt", "content": "x"}),
+    ("Bash", {"command": "mkdir -p C:/tmp/claude/x"}),
+    ("Bash", {"command": "python -m venv C:/tmp/claude/venv-a"}),
+    ("Bash", {"command": "uv venv /c/tmp/claude/v"}),
+    ("Bash", {"command": "echo a > C:/tmp/claude/x.txt"}),
+    ("Bash", {"command": "cp a.txt C:/tmp/"}),
+    ("Bash", {"command": "Copy-Item a.txt C:" + BS + "tmp" + BS + "b.txt"}),
+    ("Bash", {"command": "New-Item -ItemType Directory C:" + BS + "tmp" + BS + "claude"}),
+]
+ACCEPTES_TMP = [
+    ("Bash", {"command": "ls C:/tmp/claude"}),
+    ("Bash", {"command": "cat C:/tmp/claude/x.txt"}),
+    ("Bash", {"command": "cp C:/tmp/claude/a.txt ./a.txt"}),
+    ("Write", {"file_path": "/home/y/socle/tests/x.py", "content": "p = 'C:/tmp/x'"}),
+    ("Write", {"file_path": "/home/y/proj/recette/a.txt", "content": "x"}),
+]
+
+
+@pytest.mark.parametrize("outil,ti", REFUSES_TMP)
+def test_garde_outils_refuse_tmp(outil, ti):
+    r = garde(outil, **ti)
+    assert r.returncode == 2
+    assert "interdit" in r.stderr and "scratchpad" in r.stderr and "LOCALAPPDATA" in r.stderr
+
+
+@pytest.mark.parametrize("outil,ti", ACCEPTES_TMP)
+def test_garde_outils_accepte_tmp_en_lecture(outil, ti):
+    r = garde(outil, **ti)
+    assert r.returncode == 0 and r.stderr == ""
+
+
+def projet_secrets(p):
+    git_init(p)
+    (p / ".claude").mkdir()
+    (p / ".claude" / "settings.json").write_text(json.dumps({"env": {"FAUX_TOKEN": GLPAT, "OK": "x", "REF_TOKEN": "${REF_TOKEN}"}}))
+    (p / ".env").write_text("SNOWFLAKE_PASSWORD=" + "x" * 4 + "\nA=1\n")
+    (p / "secrets.ps1").write_text("$env:X = 1\n")
+    (p / "app.py").write_text('cfg = {"private_key_path": "k.p8"}\n')
+    (p / ".mcp.json").write_text(json.dumps({"mcpServers": {
+        "a": {"command": "npx", "args": ["x@latest"], "env": {"CLE": "en-clair-12345", "OK": "${OK}"},
+              "headers": {"Authorization": "Bearer " + "z" * 20, "X": "Bearer ${T}"}},
+        "sf": {"command": "uvx", "args": ["snowflake-labs-mcp", "--service-config-file", "c.yaml"]},
+        "sf2": {"command": "uvx", "args": ["--with", "snowflake-connector-python[secure-local-storage]",
+                                           "snowflake-labs-mcp"]}}}))
+    subprocess.run(["git", "add", ".env"], cwd=p, check=True)
+    return p
+
+
+def test_garde_socle_s30_a_s33(tmp_path):
+    projet_secrets(tmp_path)
+    r = lancer("garde_socle.py", args=("--json", str(tmp_path)))
+    ecarts = json.loads(r.stdout)
+    codes_ = [e["code"] for e in ecarts]
+    assert GLPAT not in r.stdout and "xxxx" not in r.stdout
+    regles = {(e["code"], e["regle"]) for e in ecarts}
+    assert ("S-30", ".env suivi par git") in regles
+    assert ("S-30", "secrets.ps1 non ignoré par git") in regles
+    assert ("S-30", ".env présent sans .env.example") in regles
+    assert ("S-31", "env FAUX_TOKEN en clair") in regles
+    assert not any(e["code"] == "S-31" and "REF_TOKEN" in e["regle"] for e in ecarts)
+    assert any(e["code"] == "S-32" and e["fichier"] == ".env" for e in ecarts)
+    assert any(e["code"] == "S-32" and e["fichier"] == "app.py" for e in ecarts)
+    s33 = [e["regle"] for e in ecarts if e["code"] == "S-33"]
+    assert "serveur a : env CLE en clair" in s33 and "serveur a : header Authorization en clair" in s33
+    assert not any("OK" in r_ or "header X" in r_ for r_ in s33)
+    assert any("serveur sf :" in r_ and "keyring" in r_ for r_ in s33) and not any("serveur sf2" in r_ for r_ in s33)
+    # ordre de gravité : S-30, S-31, S-33, S-32, ..., S-10
+    ordre = [c for c in dict.fromkeys(codes_)]
+    assert ordre.index("S-30") < ordre.index("S-31") < ordre.index("S-33") < ordre.index("S-32") < ordre.index("S-10")
+
+
+def test_garde_socle_secrets_conformes(tmp_path):
+    git_init(tmp_path)
+    (tmp_path / ".gitignore").write_text(".env\nsecrets*.ps1\n")
+    (tmp_path / ".env").write_text("A_TOKEN=\n")
+    (tmp_path / ".env.example").write_text("A_TOKEN=\n")
+    (tmp_path / "secrets.ps1").write_text("$env:X = 1\n")
+    (tmp_path / ".mcp.json").write_text(json.dumps({"mcpServers": {"a": {"url": "https://x", "headers": {"Authorization": "Bearer ${T}"}}}}))
+    trouves, _ = codes(tmp_path)
+    assert not trouves & {"S-30", "S-31", "S-32", "S-33"}
+
+
+def faux_home(p, toml=None, snow=None):
+    h = p / "fauxhome"
+    (h / ".snowflake").mkdir(parents=True)
+    if toml is not None:
+        (h / ".snowflake" / "connections.toml").write_text(toml, encoding="utf-8")
+    return h
+
+
+TOML = ('[connections.sso]\nauthenticator = "externalbrowser"\nclient_store_temporary_credential = true\n'
+        '[connections.nocache]\nauthenticator = "externalbrowser"\n'
+        '[connections.pwd]\nauthenticator = "externalbrowser"\nclient_store_temporary_credential = true\n'
+        'password = "' + "mdp" + 'Factice987"\n')
+
+
+def test_garde_socle_s34(tmp_path):
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    git_init(proj)
+    h = faux_home(tmp_path, TOML)
+    r = lancer("garde_socle.py", args=("--json", str(proj)), env={"USERPROFILE": str(h), "HOME": str(h)})
+    s34 = [e for e in json.loads(r.stdout) if e["code"] == "S-34"]
+    assert len(s34) == 2
+    regles = " ".join(e["regle"] for e in s34)
+    assert "nocache" in regles and "client_store_temporary_credential" in regles
+    assert "pwd" in regles and "champ password present" in regles
+    assert "connexion sso" not in regles
+    assert "Factice987" not in r.stdout
+
+
+def test_garde_socle_s34_conforme_ou_absent(tmp_path):
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    git_init(proj)
+    h = faux_home(tmp_path, TOML.split("[connections.nocache]")[0])
+    env = {"USERPROFILE": str(h), "HOME": str(h)}
+    assert not [e for e in json.loads(lancer("garde_socle.py", args=("--json", str(proj)), env=env).stdout)
+                if e["code"] == "S-34"]
+    h2 = tmp_path / "vide"
+    h2.mkdir()
+    env = {"USERPROFILE": str(h2), "HOME": str(h2)}
+    assert not [e for e in json.loads(lancer("garde_socle.py", args=("--json", str(proj)), env=env).stdout)
+                if e["code"] == "S-34"]
+
+
+def test_garde_socle_s35(tmp_path):
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    git_init(proj)
+    mauvais = tmp_path / "Python312" / "Scripts"
+    bon = tmp_path / "fauxhome" / ".local" / "bin"
+    for d in (mauvais, bon):
+        d.mkdir(parents=True)
+        (d / "snow.exe").write_text("")
+    r = lancer("garde_socle.py", args=("--json", str(proj)), env={"PATH": str(mauvais)})
+    assert [e["code"] for e in json.loads(r.stdout) if e["code"] == "S-35"] == ["S-35"]
+    r = lancer("garde_socle.py", args=("--json", str(proj)), env={"PATH": str(bon)})
+    assert not [e for e in json.loads(r.stdout) if e["code"] == "S-35"]
+
+
+def test_garde_socle_s36(tmp_path):
+    git_init(tmp_path)
+    (tmp_path / "a.py").write_text("P = 'C:/tmp/claude/pw'\n")
+    (tmp_path / "b.md").write_text("voir C:" + BS + "tmp" + BS + "x et /c/tmp/y\n")
+    (tmp_path / "c.json").write_text('{"p": "C:/tmpfoo"}')
+    (tmp_path / "archives").mkdir()
+    (tmp_path / "archives" / "vieux.md").write_text("C:/tmp/old\n")
+    (tmp_path / "memory" / "handoffs" / "archives").mkdir(parents=True)
+    (tmp_path / "memory" / "handoffs" / "archives" / "h.md").write_text("C:/tmp/old\n")
+    r = lancer("garde_socle.py", args=("--json", str(tmp_path)))
+    fichiers = sorted(e["fichier"] for e in json.loads(r.stdout) if e["code"] == "S-36")
+    assert fichiers == ["a.py", "b.md"]
+    assert "LOCALAPPDATA" in r.stdout
+
+
+def test_session_start_ssl_onedrive_venv(tmp_path, monkeypatch):
+    monkeypatch.syspath_prepend(str(SCRIPTS))
+    import session_start as ss
+    monkeypatch.setenv("NODE_EXTRA_CA_CERTS", "")
+    monkeypatch.setenv("SSL_CERT_FILE", "")
+    monkeypatch.setenv("REQUESTS_CA_BUNDLE", "x")
+    msgs = ss.controle_ssl()
+    assert any("variables SSL absentes" in m and "/socle:secrets ssl" in m and "redémarrer VS Code" in m for m in msgs)
+    assert any("REQUESTS_CA_BUNDLE posée" in m and "casse snow" in m for m in msgs)
+    bundle = tmp_path / "b.crt"
+    bundle.write_text("x")
+    monkeypatch.setenv("NODE_EXTRA_CA_CERTS", str(bundle))
+    monkeypatch.setenv("SSL_CERT_FILE", str(bundle))
+    monkeypatch.delenv("REQUESTS_CA_BUNDLE")
+    assert ss.controle_ssl() == []
+    # emplacements
+    monkeypatch.setattr(ss, "TMP_CLAUDE", str(tmp_path / "tmpclaude"))
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path / "OneDrive - X" / "proj"))
+    out = ss.controle_emplacements()
+    assert len(out) == 1 and "Projet sous OneDrive" in out[0] and "git est la sauvegarde" in out[0]
+    (tmp_path / "tmpclaude" / "venv-a").mkdir(parents=True)
+    out = ss.controle_emplacements()
+    assert len(out) == 2 and "venv hors projet détecté" in out[1] and "remise-au-pas" in out[1]
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path / "proj"))
+    assert len(ss.controle_emplacements()) == 1

@@ -12,7 +12,7 @@ Deux modes, jamais l'inverse :
 
 ## Profil partagé
 
-Un seul profil par PC : `C:/tmp/claude/pw-profile` (constante `PROFIL`). Le SSO s'y fait **une fois par PC** :
+Un seul profil par PC : `%LOCALAPPDATA%\socle\pw-profile` (constante `PROFIL`, jamais synchronisé, jamais `C:/tmp`). Profil resté à l'ancien emplacement : `python outils/preuve_navigateur.py migrer-profil` (déplace, sinon relancer `setup`). Le SSO s'y fait **une fois par PC** :
 
 ```
 python outils/preuve_navigateur.py setup <URL>    # seul usage headed : connecte-toi, ferme la fenêtre
@@ -20,7 +20,7 @@ python outils/preuve_navigateur.py setup <URL>    # seul usage headed : connecte
 
 Ensuite tout est headless. Session Entra expirée : la lib rend le code 3 / « login expiré », on relance `setup`. Deux navigateurs ne partagent pas le profil : `verrou` dit qui le tient (`ProfilVerrouille`).
 
-## Importer la lib (shim de 3 lignes)
+## Importer la lib (shim de 5 lignes)
 
 La lib vit dans `~/.claude/plugins/data/socle/lib/` (recopiée par le hook SessionStart). Le projet n'en garde que le shim `outils/preuve_navigateur.py` :
 

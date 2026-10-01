@@ -66,7 +66,7 @@ def test_init_cree_et_n_ecrase_pas(plugin, tmp_path):
         assert (projet / rel).exists(), rel
     assert (projet / ".git").exists()
     shim = (projet / "outils/preuve_navigateur.py").read_text(encoding="utf-8")
-    assert "plugins/data/socle/lib" in shim and len(shim.strip().splitlines()) == 3
+    assert "plugins/data/socle/lib" in shim and shim.rstrip().endswith("sys.exit(main())")
     assert not (projet / ".claude").exists()
 
 
@@ -127,3 +127,32 @@ def test_init_sur_le_vrai_plugin_rend_zero_ecart(tmp_path, monkeypatch):
     r = subprocess.run([sys.executable, str(reel / "hooks/scripts/garde_socle.py"), "--complet", str(projet)],
                        capture_output=True, text=True, encoding="utf-8", errors="replace")
     assert r.returncode == 0, r.stdout
+
+
+def test_init_cree_env_example_et_remise_complete_s30(plugin, tmp_path):
+    (plugin / "gabarits/env.example").write_text("# noms seulement\n", encoding="utf-8")
+    (plugin / "gabarits/gitignore").write_text(".env\n!.env.example\nsecrets*.ps1\n", encoding="utf-8")
+    projet = tmp_path / "n"
+    projet.mkdir()
+    sp.main(["init", str(projet), "--sans-commit"])
+    assert (projet / ".env.example").read_text(encoding="utf-8") == "# noms seulement\n"
+    (projet / ".env.example").unlink()
+    (plugin / "hooks/scripts/ecarts.json").write_text(json.dumps([
+        {"code": "S-30", "fichier": ".env", "ligne": 0, "regle": ".env présent sans .env.example", "correctif": "x"},
+        {"code": "S-30", "fichier": "secrets.ps1", "ligne": 0, "regle": "secrets.ps1 non ignoré par git",
+         "correctif": "l'ajouter au .gitignore (secrets*.ps1), puis /socle:secrets"}]), encoding="utf-8")
+    (projet / ".gitignore").write_text(".env\n", encoding="utf-8")
+    sp.main(["remise-au-pas", str(projet), "--oui"])
+    assert (projet / ".env.example").exists()
+    assert "secrets*.ps1" in (projet / ".gitignore").read_text(encoding="utf-8")
+
+
+def test_remise_lance_inventaire_secrets_en_premier(plugin, tmp_path, capsys):
+    s = plugin / "skills/secrets/scripts"
+    s.mkdir(parents=True)
+    (s / "secrets.py").write_text("print('INVENTAIRE-FAUX')\n", encoding="utf-8")
+    projet = tmp_path / "i"
+    projet.mkdir()
+    sp.main(["remise-au-pas", str(projet)])
+    sortie = capsys.readouterr().out
+    assert sortie.index("INVENTAIRE-FAUX") < sortie.index("aucun écart")

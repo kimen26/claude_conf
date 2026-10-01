@@ -1,5 +1,7 @@
 .env
 .env.*
+!.env.example
+secrets*.ps1
 .auth/
 _a_supprimer/
 __pycache__/
@@ -7,3 +9,4 @@ __pycache__/
 .venv/
 node_modules/
 inbox/
+recette/

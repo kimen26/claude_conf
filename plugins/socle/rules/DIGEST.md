@@ -1,4 +1,4 @@
-# Socle actif v2026.10.2
+# Socle actif v2026.10.3
 
 Méthode complète : ${CLAUDE_PLUGIN_ROOT}/rules/methode.md (dix temps, statuts, transitions).
 
@@ -13,5 +13,7 @@ Les 6 règles qui tiennent tout
 Trois commandes conventionnelles : python outils/portes.py · python outils/smoke.py · python outils/deployer.py
 Statuts : Todo, Ready, Dev, Recette, Relecture, Valide, Livre, Rejete.
 Délégation : 3 recherches ou plus, ou 100 lignes de sortie, vers les soldats Haiku (socle:fouilleur, socle:greffier, socle:photographe).
-Skills : /socle:tache · /socle:livrer · /socle:recette-ecran
+Skills : /socle:tache · /socle:livrer · /socle:recette-ecran · /socle:secrets
+Secret = variable d'environnement user + registre (`/socle:secrets`) ; jamais dans un fichier Claude ; Snowflake = SSO `connections.toml` seul.
+Emplacements : `C:/tmp` interdit ; code et venv dans le projet, état machine dans `%LOCALAPPDATA%/socle`, jetable dans le scratchpad de session (`rules/emplacements.md`).
 Règles complètes : ${CLAUDE_PLUGIN_ROOT}/rules/

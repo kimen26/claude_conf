@@ -7,7 +7,7 @@ navigateur coexistaient, 12 node + 13 cmd tournaient pour des MCP que personne n
 
 | Besoin | Mode | Visible ? |
 |---|---|---|
-| **Preuve** (smoke, banc de rendu, capture, recette, vidéo) | Playwright **Python**, `launch_persistent_context` sur le profil SSO **partagé machine** `C:/tmp/claude/pw-profile` (hors OneDrive, hors repo), **headless** | Non, rien dans la barre des tâches |
+| **Preuve** (smoke, banc de rendu, capture, recette, vidéo) | Playwright **Python**, `launch_persistent_context` sur le profil SSO **partagé machine** `%LOCALAPPDATA%\socle\pw-profile` (hors OneDrive, hors repo, jamais synchronisé ; ancien emplacement `C:/tmp` interdit, `migrer-profil` le déplace), **headless** | Non, rien dans la barre des tâches |
 | **Regard** (explorer une page, repérer un menu, voir avec Yann) | Extension Claude in Chrome branchée sur **Comet** | Oui, dans Comet |
 
 - `--headed` sert **une seule fois par PC** : un seul `setup_sso` remplit le profil partagé. Ensuite headless.

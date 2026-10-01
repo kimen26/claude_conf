@@ -18,12 +18,31 @@ def racine_plugin():
 
 
 def controle_ssl():
-    manque = [v for v in ("NODE_EXTRA_CA_CERTS", "REQUESTS_CA_BUNDLE")
+    manque = [v for v in ("NODE_EXTRA_CA_CERTS", "SSL_CERT_FILE")
               if not os.environ.get(v) or not os.path.exists(os.environ[v])]
+    out = []
     if manque:
-        return [f"ATTENTION SSL Netskope : {', '.join(manque)} absent ou introuvable "
-                f"(bundle {BUNDLE}). Relancer VS Code via le Desktop Shortcut."]
-    return []
+        out.append("ATTENTION variables SSL absentes (" + ", ".join(manque) + ") : /socle:secrets ssl "
+                   "(une fois, puis redémarrer VS Code)")
+    if os.environ.get("REQUESTS_CA_BUNDLE"):
+        out.append("ATTENTION REQUESTS_CA_BUNDLE posée : elle casse snow (mesuré 2026-10-01), la retirer "
+                   "des variables utilisateur (SSL_CERT_FILE suffit)")
+    return out
+
+
+TMP_CLAUDE = r"C:\tmp\claude"
+
+
+def controle_emplacements():
+    out = []
+    projet = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    if "onedrive" in projet.lower():
+        out.append(r"Projet sous OneDrive : fichiers écrasés, venv synchronisé, sessions qui fuient vers C:\tmp. "
+                   "Déplacer le repo hors OneDrive (git est la sauvegarde).")
+    import glob
+    if glob.glob(os.path.join(TMP_CLAUDE, "venv-*")):
+        out.append("venv hors projet détecté : /socle:nouveau-projet remise-au-pas")
+    return out
 
 
 def _sha(p):
@@ -87,7 +106,7 @@ def audit():
 
 def main():
     sortie = []
-    for fn in (controle_ssl, sync_lib, digest, audit):
+    for fn in (controle_ssl, controle_emplacements, sync_lib, digest, audit):
         try:
             sortie += fn() or []
         except Exception:

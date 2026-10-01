@@ -7,7 +7,7 @@ Doctrine :
   * le navigateur est TOUJOURS fermé (``finally``), sinon le profil reste verrouillé.
 
 Importable (``from preuve_navigateur import *``) et exécutable en CLI :
-``python preuve_navigateur.py setup|recette|capture|pdf|verrou``.
+``python preuve_navigateur.py setup|recette|capture|pdf|verrou|migrer-profil``.
 Codes de sortie CLI : 0 succès, 1 échec, 3 login expiré.
 Aucun ``print`` hors CLI : la bibliothèque journalise via ``logging``.
 """
@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import logging
+import os
 import re
 import shutil
 import subprocess
@@ -26,7 +27,14 @@ from pathlib import Path
 
 log = logging.getLogger("preuve_navigateur")
 
-PROFIL = Path("C:/tmp/claude/pw-profile")
+def racine_etat() -> Path:
+    """État machine non versionné (profil SSO, caches) : %LOCALAPPDATA%/socle, jamais synchronisé."""
+    base = os.environ.get("LOCALAPPDATA")
+    return (Path(base) if base else Path.home() / "AppData" / "Local") / "socle"
+
+
+PROFIL = racine_etat() / "pw-profile"
+ANCIEN_PROFIL = Path("C:/tmp/claude/pw-profile")  # emplacement interdit : sert à migrer-profil seulement
 VIEWPORTS = {"mobile": (390, 844), "desktop": (1440, 900), "large": (1850, 820)}
 
 EXIT_OK, EXIT_ECHEC, EXIT_LOGIN = 0, 1, 3
@@ -100,6 +108,21 @@ def ouvrir(headed: bool = False, viewport: str = "desktop", video_dir=None):
             yield ctx, page
         finally:
             ctx.close()
+
+
+def migrer_profil() -> tuple[int, str]:
+    """Déplace l'ancien profil (C:/tmp/claude/pw-profile) vers PROFIL. Rend (code, message)."""
+    if PROFIL.exists():
+        suite = f" ; l'ancien {ANCIEN_PROFIL} est à supprimer par Yann" if ANCIEN_PROFIL.exists() else ""
+        return EXIT_OK, f"profil déjà à sa place : {PROFIL}{suite}"
+    if not ANCIEN_PROFIL.exists():
+        return EXIT_OK, f"aucun profil à migrer : lancer 'setup <URL>' pour créer {PROFIL}"
+    try:
+        PROFIL.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(ANCIEN_PROFIL), str(PROFIL))
+    except OSError as e:
+        return EXIT_ECHEC, f"déplacement impossible ({type(e).__name__}) : fermer le navigateur qui tient le profil"
+    return EXIT_OK, f"profil déplacé vers {PROFIL}"
 
 
 def setup_sso(url: str) -> None:
@@ -281,6 +304,7 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("src")
     p.add_argument("chemin")
     sub.add_parser("verrou", help="dit si le profil est verrouillé")
+    sub.add_parser("migrer-profil", help="déplace C:/tmp/claude/pw-profile vers %LOCALAPPDATA%/socle/pw-profile")
     return ap
 
 
@@ -294,6 +318,10 @@ def main(argv=None) -> int:
             msg = verrou_profil()
             print(msg or "profil libre")
             return EXIT_ECHEC if msg else EXIT_OK
+        if args.cmd == "migrer-profil":
+            code, msg = migrer_profil()
+            print(msg)
+            return code
         if args.cmd == "setup":
             setup_sso(args.url)
             return EXIT_OK

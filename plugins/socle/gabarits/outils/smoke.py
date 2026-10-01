@@ -7,7 +7,7 @@ et `banc` appellent pour voir un ecran. Contrat de sortie a respecter une fois i
   - un fichier mesures.json (cle -> valeur chiffree : chevauchements, debordements, durees) ;
   - sur stdout : une ligne `A OUVRIR : <chemin>` par capture ;
   - exit 0 si les scenarios ont tourne (cela ne prouve rien sur les pixels : on regarde les captures).
-Conseil : Playwright Python, profil SSO partage machine C:/tmp/claude/pw-profile, headless.
+Conseil : Playwright Python, profil SSO partage machine (PROFIL de preuve_navigateur, sous %LOCALAPPDATA%/socle), headless.
 """
 from __future__ import annotations
 

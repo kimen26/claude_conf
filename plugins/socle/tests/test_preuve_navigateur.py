@@ -26,7 +26,30 @@ def profil(tmp_path, monkeypatch):
 
 def test_constantes():
     assert pn.VIEWPORTS == {"mobile": (390, 844), "desktop": (1440, 900), "large": (1850, 820)}
-    assert pn.PROFIL.as_posix() == "C:/tmp/claude/pw-profile"
+    assert pn.PROFIL.as_posix().lower().endswith("/socle/pw-profile")
+    assert "tmp" not in pn.PROFIL.as_posix().lower().split("/")
+
+
+def test_racine_etat_suit_localappdata(tmp_path, monkeypatch):
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    assert pn.racine_etat() == tmp_path / "socle"
+    monkeypatch.delenv("LOCALAPPDATA")
+    assert pn.racine_etat() == Path.home() / "AppData" / "Local" / "socle"
+
+
+def test_migrer_profil(tmp_path, monkeypatch, capsys):
+    ancien, nouveau = tmp_path / "tmp/claude/pw-profile", tmp_path / "local/socle/pw-profile"
+    monkeypatch.setattr(pn, "ANCIEN_PROFIL", ancien)
+    monkeypatch.setattr(pn, "PROFIL", nouveau)
+    code, msg = pn.migrer_profil()  # rien nulle part
+    assert code == 0 and "setup" in msg and not nouveau.exists()
+    ancien.mkdir(parents=True)
+    (ancien / "Default").write_text("cookie", encoding="utf-8")
+    assert pn.main(["migrer-profil"]) == 0
+    assert (nouveau / "Default").read_text(encoding="utf-8") == "cookie" and not ancien.exists()
+    ancien.mkdir(parents=True)  # les deux existent : on ne touche à rien
+    code, msg = pn.migrer_profil()
+    assert code == 0 and "supprimer par Yann" in msg and ancien.exists() and nouveau.exists()
 
 
 def test_verrou_libre(profil):

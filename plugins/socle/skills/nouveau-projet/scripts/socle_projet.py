@@ -24,17 +24,20 @@ SHIM = (
     "import sys; from pathlib import Path\n"
     'sys.path.insert(0, str(Path.home()/".claude/plugins/data/socle/lib"))\n'
     "from preuve_navigateur import *  # noqa: F401,F403\n"
+    'if __name__ == "__main__":\n'
+    "    sys.exit(main())\n"
 )
 # (source dans gabarits/, destination dans le projet)
 GABARITS_FIXES = [
     ("CLAUDE.md", "CLAUDE.md"),
     ("gitignore", ".gitignore"),
+    ("env.example", ".env.example"),
     ("backlog/config.yml", "backlog/config.yml"),
     ("outils/portes.py", "outils/portes.py"),
     ("outils/smoke.py", "outils/smoke.py"),
     ("outils/deployer.py", "outils/deployer.py"),
 ]
-ORDRE_REMISE = ["S-30", "S-10", "S-20", "S-01", "S-02", "S-03", "S-50", "S-60", "S-40"]
+ORDRE_REMISE = ["S-30", "S-31", "S-33", "S-32", "S-34", "S-35", "S-10", "S-20", "S-01", "S-02", "S-03", "S-50", "S-60", "S-40"]
 
 
 # ------------------------------------------------------------------ localisation
@@ -67,6 +70,16 @@ def lancer_garde(projet: Path, mode: str) -> str:
         return ""
     r = subprocess.run([sys.executable, str(g), mode, str(projet)],
                        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    return r.stdout.strip()
+
+
+def inventaire_secrets(projet: Path) -> str:
+    """Sortie de secrets.py inventaire (noms seulement), ou chaîne vide si le skill est absent."""
+    s = racine_plugin() / "skills/secrets/scripts/secrets.py"
+    if not s.is_file():
+        return ""
+    r = subprocess.run([sys.executable, str(s), "inventaire", str(projet)], capture_output=True,
+                       text=True, encoding="utf-8", errors="replace")
     return r.stdout.strip()
 
 
@@ -240,14 +253,16 @@ def planifier(projet: Path, radical: bool) -> list[dict]:
         code, fichier = e["code"], e.get("fichier", "")
         regle, correctif = e.get("regle", ""), e.get("correctif", "")
         g = {"code": code, "fichier": fichier, "regle": regle, "correctif": correctif}
-        if code in ("S-01", "S-02", "S-03", "S-50", "S-60"):
+        if code in ("S-01", "S-02", "S-03", "S-50", "S-60") or (
+                code == "S-30" and (".env.example" in regle or "secrets*.ps1" in correctif)):
             g["geste"] = "completer"
         elif code in ("S-40", "S-20") and radical and fichier and "mcpServers" not in regle \
                 and fichier != "outils/preuve_navigateur.py":
             g["geste"] = "deplacer"
         else:
             g["geste"] = "manuel"
-        cle = (g["geste"], code, fichier) if g["geste"] != "completer" else ("completer", code)
+        cle = (g["geste"], code, fichier) if g["geste"] != "completer" else (
+            "completer", code, regle if code == "S-30" else "")
         if cle in vus:
             continue
         vus.add(cle)
@@ -255,9 +270,10 @@ def planifier(projet: Path, radical: bool) -> list[dict]:
     return gestes
 
 
-def completer(projet: Path, code: str) -> list[str]:
-    """Pose ce qui manque pour S-01/02/03/50/60, sans rien écraser."""
+def completer(projet: Path, code: str, regle: str = "") -> list[str]:
+    """Pose ce qui manque pour S-01/02/03/50/60 et S-30 (.env.example, .gitignore), sans rien écraser."""
     voulus = {"S-01": ["CLAUDE.md"], "S-02": ["memory/"], "S-03": [".gitignore"],
+              "S-30": [".env.example"] if ".env.example" in regle else [".gitignore"],
               "S-50": ["backlog/"], "S-60": ["outils/portes.py", "outils/smoke.py",
                                              "outils/deployer.py"]}[code]
     crees = []
@@ -286,6 +302,11 @@ def ajouter_gitignore(src: Path, dst: Path) -> bool:
 
 def cmd_remise(args) -> int:
     projet = Path(args.chemin).resolve()
+    inv = inventaire_secrets(projet)
+    if inv:
+        print("Inventaire des secrets (noms seulement) :")
+        print(inv)
+        print()
     gestes = planifier(projet, args.radical)
     if not gestes:
         print("aucun écart")
@@ -301,7 +322,7 @@ def cmd_remise(args) -> int:
         if not args.oui:
             continue
         if g["geste"] == "completer":
-            for c in completer(projet, g["code"]):
+            for c in completer(projet, g["code"], g["regle"]):
                 print(f"   créé : {c}")
         elif g["geste"] == "deplacer":
             deplacer(projet, [g["fichier"]], g["regle"], remplace_par(g["code"], g["fichier"]))
