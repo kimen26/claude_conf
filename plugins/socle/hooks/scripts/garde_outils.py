@@ -50,13 +50,22 @@ def tmp_cree(cmd):
 
 
 MSG_DEPOT = "a_poser.env ne se lit jamais : il se pose par session_start ou secrets.py poser --fichier"
-VERBES_LECTURE = re.compile(
-    r"(?<![\w-])(?:cat|type|Get-Content|gc|less|more|head|tail|grep|rg|sed|awk|bat|source|Select-String|sls)(?![\w-])"
-    r"|rtk\s+read", re.I)
+VERBES_LECTURE = (r"cat|type|more|less|head|tail|grep|rg|sed|awk|Get-Content|gc|Select-String|sls|findstr|strings|od|xxd"
+                  r"|cp|copy|Copy-Item|Move-Item|mv|source|bat")
+HEREDOC = re.compile(r"<<-?\s*[\"']?(\w+)[\"']?[^\n]*\n.*?\n\s*\1(?=\s|$)", re.S)
+DEBUT_LECTURE = re.compile(
+    r"^\s*(?:[$\w.]+\s*=\s*)?[(&\s]*(?:(?:" + VERBES_LECTURE + r")(?:\.exe)?\s"
+    r"|rtk\s+read\s|python3?(?:\.exe)?\s+-c\s.*open)", re.I)
+REDIRECTION_ENTREE = re.compile(r"<\s*[\"']?\S*a_poser\.env")
 
 
 def lit_depot(cmd):
-    return "a_poser.env" in cmd and bool(VERBES_LECTURE.search(cmd))
+    """Vrai si un verbe de lecture a a_poser.env pour argument dans la même commande simple."""
+    cmd = HEREDOC.sub("", cmd)
+    for seg in re.split(r"\|\|?|;|&&|\n", cmd):
+        if "a_poser.env" in seg and (DEBUT_LECTURE.search(seg) or REDIRECTION_ENTREE.search(seg)):
+            return True
+    return False
 
 
 def refuser(msg):

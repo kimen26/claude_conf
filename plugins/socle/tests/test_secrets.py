@@ -398,6 +398,15 @@ def test_garde_depot():
     assert garde_sortie("Read", file_path="/proj/.env").returncode == 0  # .env : affaire de garde-secrets.py
 
 
+def test_garde_depot_commandes_simples():
+    d = r"C:\Users\x\AppData\Local\socle\a_poser.env"
+    msg = f"git commit -F - <<'EOF'\nfix: le garde lit {d}\n\ncat {d}\nEOF"
+    assert garde_sortie("Bash", command=msg).returncode == 0
+    assert garde_sortie("Bash", command=f"stat {d}").returncode == 0
+    assert garde_sortie("Bash", command=f"grep -c x {d}").returncode == 2
+    assert garde_sortie("Bash", command=f"cat {d} | wc -l").returncode == 2
+
+
 def test_s37(depot, monkeypatch):
     import garde_socle
     monkeypatch.setattr(sec, "lire_env_user", lambda: ["PATH"])
