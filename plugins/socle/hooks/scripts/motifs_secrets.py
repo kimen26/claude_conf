@@ -3,6 +3,7 @@
 Aucune fonction ne rend la valeur d'un secret : elles rendent des booléens ou des identifiants
 de motif. Les tests fabriquent leurs fausses valeurs à l'exécution.
 """
+import os
 import re
 
 # Jetons à préfixe reconnaissable : sûrs dans n'importe quel fichier.
@@ -58,8 +59,20 @@ def valeur_en_clair(nom, valeur):
         return False
     if a_motif(valeur):
         return True
-    banal = re.fullmatch(r"[0-9.]+|true|false|none|null", valeur.strip(), re.I) is not None
-    return nom_secret(nom) and not banal and not valeur.lstrip().startswith("${")
+    return nom_secret(nom) and not banal(valeur) and not valeur.lstrip().startswith("${")
+
+
+def banal(valeur):
+    """Jamais un secret : vide, nombre, booléen, ${VAR}, ou chemin d'un fichier/dossier existant."""
+    v = str(valeur).strip()
+    if not v or v.startswith("${"):
+        return True
+    if re.fullmatch(r"[0-9.]+|true|false|none|null", v, re.I):
+        return True
+    try:
+        return len(v) < 260 and "\n" not in v and os.path.exists(v)
+    except (OSError, ValueError):
+        return False
 
 
 def est_reference(valeur):

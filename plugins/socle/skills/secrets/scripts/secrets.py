@@ -168,9 +168,13 @@ def _en_tete_secret(k: str) -> bool:
     return ms.nom_secret(k) or k.lower() in ("authorization", "x-api-key", "cookie")
 
 
-def _etat_valeur(k, v) -> str | None:
-    """Etat d'une paire (nom, valeur) sans rien exposer : None si sans intérêt."""
-    if ms.valeur_en_clair(k, v) or (_en_tete_secret(k) and isinstance(v, str) and v.strip() and "${" not in v):
+def _etat_valeur(k, v, entete=False) -> str | None:
+    """Etat d'une paire (nom, valeur) sans rien exposer : None si sans intérêt.
+
+    Règle unique pour env et headers : une valeur banale (vide, nombre, booléen, ${VAR},
+    chemin existant) n'est jamais un secret ; sinon motif, ou nom secret.
+    """
+    if ms.valeur_en_clair(k, v) or (entete and _en_tete_secret(k) and isinstance(v, str) and not ms.banal(v)):
         return "a_deplacer"
     if ms.nom_secret(k) or (isinstance(v, str) and "${" in v):
         return "conforme"
@@ -203,9 +207,7 @@ def _mapping(rows, emplacement, mapping, type_, entete=False):
     if not isinstance(mapping, dict):
         return
     for k, v in mapping.items():
-        e = _etat_valeur(k, v) if not entete else (
-            "a_deplacer" if (_en_tete_secret(k) and "${" not in str(v)) or ms.a_motif(str(v)) else
-            ("conforme" if "${" in str(v) else None))
+        e = _etat_valeur(k, v, entete)
         if e:
             rows.append(_ligne(emplacement, k, type_, e))
 

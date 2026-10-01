@@ -234,6 +234,19 @@ def test_snow(faux, monkeypatch, capsys):
     assert "keyring absent" in sortie and "cache de token SSO absent" in sortie and "Python global" in sortie
 
 
+def test_settings_env_valeurs_banales(faux):
+    """MAX_THINKING_TOKENS=10000 dans settings.json user n'est pas un secret (relevé en réel)."""
+    ecrire(faux["claude"] / "settings.json", json.dumps({"env": {
+        "MAX_THINKING_TOKENS": "10000", "OTHER_TOKEN": 5, "A_TOKEN": "true", "B_TOKEN": "",
+        "C_TOKEN": str(faux["claude"]), "THEME": "dark", "REAL_TOKEN": FAUX, "REF_TOKEN": "${REF_TOKEN}"}}))
+    etats_ = {r["nom"]: r["etat"] for r in sec.inventaire([faux["proj"]]) if r["type"] == "settings_env"}
+    assert etats_["MAX_THINKING_TOKENS"] == "conforme"
+    assert etats_["REAL_TOKEN"] == "a_deplacer"
+    assert etats_["REF_TOKEN"] == "conforme"
+    assert "THEME" not in etats_
+    assert not [n for n in ("A_TOKEN", "B_TOKEN", "C_TOKEN") if etats_.get(n) == "a_deplacer"]
+
+
 def test_motifs():
     assert ms.nom_secret("GITLAB_PAT") and ms.nom_secret("N8N_API_KEY") and ms.nom_secret("x_token")
     assert not ms.nom_secret("PATH") and not ms.nom_secret("PYTHONPATH") and not ms.nom_secret("PATHEXT")
