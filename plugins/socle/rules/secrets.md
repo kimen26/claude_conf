@@ -2,12 +2,16 @@
 
 Vocabulaire : **secret** (une valeur), **registre** (la liste des noms, `secrets-registre.md`),
 **poser** (mettre en variable d'environnement utilisateur), **tourner** (révoquer et reposer).
+**Poser = écrire `NOM=valeur` dans `%LOCALAPPDATA%\socle\a_poser.env`, c'est tout.** À l'ouverture de la
+session suivante (ou par `secrets.py poser --fichier`), chaque ligne devient une variable utilisateur, son NOM
+entre au registre et le fichier est vidé (gabarit seul). Ce fichier ne se lit jamais par un agent
+(`garde_outils` refuse Read, cat, type, Get-Content) et c'est le seul où un Write contenant un secret passe.
 Outil : `/socle:secrets` (inventaire, verifier, poser, ssl, purger, snow). Le script ne lit, n'affiche
 et ne recopie jamais une valeur.
 
 | Chose | Emplacement UNIQUE | Interdit |
 |---|---|---|
-| Secret transverse (PAT GitLab, token Confluence, n8n, Supabase, clés API) | variable d'environnement UTILISATEUR Windows, posée une fois par `/socle:secrets poser NOM` (saisie masquée) ; son NOM est inscrit au registre `rules/secrets-registre.md` (nom, usage, consommateurs, date de pose) | `settings.json` → `env`, `.claude.json`, `secrets.ps1`, tout `.bak` |
+| Secret transverse (PAT GitLab, token Confluence, n8n, Supabase, clés API) | variable d'environnement UTILISATEUR Windows, posée une fois en écrivant `NOM=valeur` dans `a_poser.env` (ou `/socle:secrets poser NOM`, saisie masquée) ; son NOM est inscrit au registre `rules/secrets-registre.md` (nom, usage, consommateurs, date de pose) | `settings.json` → `env`, `.claude.json`, `secrets.ps1`, tout `.bak` |
 | Secret propre à un projet, lu par un script | `.env` git-ignoré + `.env.example` versionné (noms seuls), chargé par python-dotenv | valeur dans le code, un `.md`, un test |
 | Secret consommé par un MCP ou un hook | variable d'environnement user (Claude Code n'étend `${VAR}` que depuis l'environnement du process, pas depuis `.env`) ; `.mcp.json` écrit `${NOM}` | valeur en clair dans `.mcp.json` ou `settings.json` |
 | Snowflake | `~/.snowflake/connections.toml` seul, `authenticator = externalbrowser` et `client_store_temporary_credential = true` sur chaque connexion, le code ne connaît qu'un `connection_name`. Le socle LIT ce fichier, ne l'écrit jamais | `SNOWFLAKE_PASSWORD`, clé privée, PAT, account/user en dur, « sandbox », « compte de service » |
@@ -44,5 +48,5 @@ signale si elle existe. Pour `requests` : `verify=os.environ["NETSKOPE_BUNDLE"]`
 S-30 `.env` suivi, `secrets*.ps1` non ignoré, `.env` sans `.env.example`, secret dans un fichier suivi ·
 S-31 `env` en clair dans `.claude/settings*.json` · S-32 auth Snowflake hors `connections.toml` ·
 S-33 `.mcp.json` en clair, ou `snowflake-labs-mcp` sans keyring · S-34 connexion non SSO / sans cache ·
-S-35 `snow` hors `~/.local/bin`. `garde_outils` refuse d'écrire un secret dans un fichier Claude
+S-35 `snow` hors `~/.local/bin` · S-37 `a_poser.env` avec une ligne `NOM=valeur` non posée, ou posée mais fichier non vidé. `garde_outils` refuse d'écrire un secret dans un fichier Claude
 (`settings*.json`, `.claude.json`, `*.bak*`, `secrets*.ps1`, `backups/`) et de copier `settings.json` en `.bak`.

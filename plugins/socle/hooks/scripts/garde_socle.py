@@ -14,7 +14,7 @@ from collections import namedtuple
 
 Ecart = namedtuple("Ecart", "code fichier ligne regle correctif")
 
-GRAVITE = ["S-30", "S-31", "S-33", "S-32", "S-34", "S-35", "S-36", "S-10", "S-20", "S-40", "S-01", "S-02", "S-03", "S-50", "S-60"]
+GRAVITE = ["S-30", "S-31", "S-33", "S-32", "S-34", "S-35", "S-36", "S-37", "S-10", "S-20", "S-40", "S-01", "S-02", "S-03", "S-50", "S-60"]
 EXCLUS = {".venv", "venv", "node_modules", "_a_supprimer", ".git", ".snowflake", "__pycache__"}
 PROFIL_OK = "/socle/pw-profile"
 STATUTS = ["Todo", "Ready", "Dev", "Recette", "Relecture", "Valide", "Livre", "Rejete"]
@@ -444,6 +444,27 @@ def s_35(racine):
     return out[:1]
 
 
+def s_37(racine):
+    """Niveau user : a_poser.env ne doit porter aucune ligne NOM=valeur (ni posée, ni à poser)."""
+    import poser_secrets
+    chemin = poser_secrets.chemin_depot()
+    paires, _ = poser_secrets.lire_paires(chemin)
+    if not paires:
+        return []
+    connus = poser_secrets.env_user_noms()
+    if connus is None:
+        return []
+    out = []
+    for nom, _v in paires:
+        if nom not in connus:
+            out.append(Ecart("S-37", str(chemin), 0, f"{nom} déposée dans a_poser.env mais pas posée",
+                             "lancer secrets.py poser --fichier"))
+        else:
+            out.append(Ecart("S-37", str(chemin), 0, f"{nom} posée mais a_poser.env non vidé",
+                             "fichier non vidé : secrets.py poser --fichier, puis tourner le secret s'il a fuité"))
+    return out[:2]
+
+
 def s_36(racine):
     """C:/tmp interdit : projet, %LOCALAPPDATA%/socle ou scratchpad."""
     out = []
@@ -505,7 +526,7 @@ def s_60(racine):
             for f in ("portes.py", "smoke.py", "deployer.py") if not os.path.isfile(os.path.join(racine, "outils", f))]
 
 
-CONTROLES = [s_01, s_02, s_03, s_10, s_20, s_30, s_31, s_32, s_33, s_34, s_35, s_36, s_40, s_50, s_60]
+CONTROLES = [s_01, s_02, s_03, s_10, s_20, s_30, s_31, s_32, s_33, s_34, s_35, s_36, s_37, s_40, s_50, s_60]
 
 
 def _rang(code):

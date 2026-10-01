@@ -1,7 +1,7 @@
 ---
 name: secrets
 description: "QUAND : dès qu'un secret, un token, une clé, un mot de passe, un .env, un MCP avec credentials, SSL Netskope ou l'auth Snowflake est en jeu, dans n'importe quel projet. Pose, inventorie et contrôle les secrets (variables d'environnement utilisateur + registre), sans jamais lire une valeur."
-argument-hint: "inventaire | verifier | poser NOM | ssl | purger | snow"
+argument-hint: "poser --fichier | inventaire | verifier | poser NOM | ssl | purger | snow"
 ---
 
 # /socle:secrets : secrets et accès
@@ -11,7 +11,7 @@ argument-hint: "inventaire | verifier | poser NOM | ssl | purger | snow"
 Doctrine complète : `${CLAUDE_PLUGIN_ROOT}/rules/secrets.md`.
 
 ## La doctrine en bref
-1. Secret transverse (PAT, tokens, clés API) = **variable d'environnement UTILISATEUR Windows**, posée une fois par `poser NOM` (saisie masquée), son NOM au registre.
+1. Secret transverse (PAT, tokens, clés API) = **variable d'environnement UTILISATEUR Windows**. Pour poser : écrire `NOM=valeur` (un par ligne) dans `%LOCALAPPDATA%\socle\a_poser.env`. La session suivante le pose, inscrit le NOM au registre et vide le fichier. Ce fichier ne se lit jamais par un agent.
 2. Secret propre à un projet = `.env` git-ignoré + `.env.example` versionné (noms seuls).
 3. Secret d'un MCP ou d'un hook = variable user ; `.mcp.json` écrit `${NOM}`, jamais la valeur.
 4. Interdit : `settings.json` → `env`, `.claude.json`, `secrets.ps1`, tout `.bak` d'un fichier qui porte un secret.
@@ -26,6 +26,7 @@ Doctrine complète : `${CLAUDE_PLUGIN_ROOT}/rules/secrets.md`.
 
 | Commande | Rôle |
 |---|---|
+| `poser --fichier [chemin] [--sans-vider]` | **première commande** : pose chaque `NOM=valeur` de `a_poser.env` (`%LOCALAPPDATA%\socle\a_poser.env`), NOM au registre, fichier réécrit avec le gabarit seul. N'imprime que des noms. Fait aussi tout seul à l'ouverture de session |
 | `inventaire [chemin] [--json]` | NOMS seulement : tableau `emplacement, nom, type, etat` (niveau user + projet). États : `conforme`, `a_deplacer`, `doublon`, `sauvegarde_a_purger`, `hors_registre`, `config_morte`, plus `exemple_manquant` (`.env` sans `.env.example`) et `non_conforme_sso` (connexion Snowflake sans externalbrowser ou sans cache) |
 | `verifier` | registre contre environnement user : manques et orphelines, signale `REQUESTS_CA_BUNDLE`. Exit 1 si écart |
 | `poser NOM [--usage "..."]` | saisie masquée, variable user, ligne au registre. La valeur ne passe jamais par une ligne de commande |

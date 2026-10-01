@@ -35,7 +35,7 @@
         ]
       },
       {
-        "matcher": "Bash|Write|Edit|MultiEdit",
+        "matcher": "Bash|PowerShell|Read|Write|Edit|MultiEdit",
         "hooks": [
           {
             "type": "command",

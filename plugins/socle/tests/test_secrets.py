@@ -300,3 +300,113 @@ def test_registre_repo_d_abord(tmp_path, monkeypatch, capsys):
     assert sec.chemin_registre() == repo
     sec.avertir_hors_repo()
     assert capsys.readouterr().out == ""
+
+
+# ------------------------------------------------------------------ dépôt a_poser.env
+import subprocess  # noqa: E402
+
+import poser_secrets as dep  # noqa: E402
+
+V1 = "valeurFactice" + "Un123"
+V2 = "valeurFactice" + "Deux456"
+
+
+@pytest.fixture
+def depot(faux, monkeypatch):
+    appels = []
+
+    def faux_ps(script, entree=None):
+        appels.append((script, entree))
+        return subprocess.CompletedProcess([], 0, "", "")
+
+    monkeypatch.setattr(sec, "_powershell", faux_ps)
+    monkeypatch.setattr(dep, "BACKEND", sec)
+    chemin = faux["home"] / "AppData/Local/socle/a_poser.env"
+    gabarit = (PLUGIN / "gabarits/a_poser.env").read_text(encoding="utf-8")
+    ecrire(chemin, gabarit + f"\nNOUVEAU_UN={V1}\n# commentaire\nNOUVEAU_DEUX=\"{V2}\"\nligne cassée sans egal\n")
+    return {"chemin": chemin, "appels": appels, "gabarit": gabarit, **faux}
+
+
+def test_gabarit_dans_le_plugin():
+    g = (PLUGIN / "gabarits/a_poser.env").read_text(encoding="utf-8").splitlines()
+    assert len(g) == 5 and all(l.startswith("#") for l in g)
+
+
+def test_poser_fichier(depot, capsys):
+    assert sec.main(["poser", "--fichier", str(depot["chemin"])]) == 0
+    sortie = capsys.readouterr().out
+    assert "posé : NOUVEAU_UN" in sortie and "posé : NOUVEAU_DEUX" in sortie
+    assert "ligne 10 mal formée" in sortie and "total : 2 posé(s)" in sortie
+    assert V1 not in sortie and V2 not in sortie
+    assert len(depot["appels"]) == 2
+    for script, entree in depot["appels"]:
+        assert V1 not in script and V2 not in script
+    assert [e for _, e in depot["appels"]] == [V1, V2]
+    reg = depot["registre"].read_text(encoding="utf-8")
+    assert "`NOUVEAU_UN`" in reg and "posé par fichier le" in reg and V1 not in reg
+    assert depot["chemin"].read_text(encoding="utf-8") == depot["gabarit"]
+
+
+def test_poser_fichier_sans_vider(depot, capsys):
+    avant = depot["chemin"].read_text(encoding="utf-8")
+    assert sec.main(["poser", "--fichier", str(depot["chemin"]), "--sans-vider"]) == 0
+    assert depot["chemin"].read_text(encoding="utf-8") == avant
+
+
+def test_session_start_depot(depot, capsys):
+    import session_start
+    lignes = session_start.depot_secrets()
+    assert len(lignes) == 1
+    assert lignes[0].startswith("SOCLE : 2 secret(s) posé(s) depuis a_poser.env (fichier vidé) : NOUVEAU_UN, NOUVEAU_DEUX.")
+    assert "Redémarrer VS Code" in lignes[0] and V1 not in lignes[0] and V2 not in lignes[0]
+    assert depot["chemin"].read_text(encoding="utf-8") == depot["gabarit"]
+    assert session_start.depot_secrets() == []  # fichier vidé : rien à faire
+
+
+def test_session_start_cree_gabarit(faux, monkeypatch):
+    import session_start
+    cible = faux["home"] / "AppData/Local/socle/a_poser.env"
+    assert not cible.exists()
+    assert session_start.depot_secrets() == []
+    assert cible.read_text(encoding="utf-8") == (PLUGIN / "gabarits/a_poser.env").read_text(encoding="utf-8")
+
+
+def test_ssl_ecrit_le_gabarit(faux, monkeypatch, tmp_path):
+    monkeypatch.setattr(sec, "BUNDLE", str(ecrire(tmp_path / "b.crt", "x")))
+    monkeypatch.setattr(sec, "_powershell", lambda s, entree=None: subprocess.CompletedProcess([], 0, "", ""))
+    monkeypatch.setattr(sec, "_executer", lambda c: (0, ""))
+    assert sec.main(["ssl"]) == 0
+    assert (faux["home"] / "AppData/Local/socle/a_poser.env").is_file()
+
+
+def garde_sortie(outil, **ti):
+    return subprocess.run([sys.executable, "-B", str(PLUGIN / "hooks/scripts/garde_outils.py")],
+                          input=json.dumps({"tool_name": outil, "tool_input": ti}),
+                          capture_output=True, text=True, encoding="utf-8")
+
+
+def test_garde_depot():
+    chemin = r"C:\Users\x\AppData\Local\socle\a_poser.env"
+    for outil, ti in (("Read", {"file_path": chemin}), ("Bash", {"command": f"cat {chemin}"}),
+                      ("PowerShell", {"command": f"Get-Content '{chemin}'"})):
+        r = garde_sortie(outil, **ti)
+        assert r.returncode == 2 and "a_poser.env ne se lit jamais" in r.stderr, outil
+    r = garde_sortie("Write", file_path=chemin, content="TOKEN_X=glpat-" + "FAUX0000000000000000\n")
+    assert r.returncode == 0 and r.stderr == ""
+    assert garde_sortie("Bash", command=f"python secrets.py poser --fichier {chemin}").returncode == 0
+    assert garde_sortie("Read", file_path="/proj/README.md").returncode == 0
+    assert garde_sortie("Read", file_path="/proj/.env").returncode == 0  # .env : affaire de garde-secrets.py
+
+
+def test_s37(depot, monkeypatch):
+    import garde_socle
+    monkeypatch.setattr(sec, "lire_env_user", lambda: ["PATH"])
+    ec = garde_socle.s_37("x")
+    assert [e.code for e in ec] == ["S-37", "S-37"] and "pas posée" in ec[0].regle
+    assert "secrets.py poser --fichier" in ec[0].correctif
+    monkeypatch.setattr(sec, "lire_env_user", lambda: ["NOUVEAU_UN", "NOUVEAU_DEUX"])
+    ec = garde_socle.s_37("x")
+    assert len(ec) == 2 and "non vidé" in ec[0].regle
+    assert all(V1 not in str(e) and V2 not in str(e) for e in ec)
+    dep.vider(depot["chemin"])
+    assert garde_socle.s_37("x") == []

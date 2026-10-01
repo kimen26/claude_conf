@@ -4,6 +4,7 @@
     secrets.py inventaire [chemin] [--json]
     secrets.py verifier
     secrets.py poser NOM [--usage "..."]
+    secrets.py poser --fichier [chemin] [--sans-vider]
     secrets.py ssl
     secrets.py purger [--oui]
     secrets.py snow
@@ -24,11 +25,13 @@ import re
 import shutil
 import subprocess
 import sys
+import types
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[2] / "hooks" / "scripts"))
 import motifs_secrets as ms  # noqa: E402
+import poser_secrets as ps  # noqa: E402
 
 BUNDLE = r"C:\ProgramData\Netskope\stagent\data\netskope-complete-bundle.crt"
 NOM_VALIDE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -393,7 +396,31 @@ def cmd_verifier(_args) -> int:
 
 
 # ------------------------------------------------------------------ poser / ssl
+def cmd_poser_fichier(args) -> int:
+    """Pose chaque NOM=valeur du fichier de dépôt. N'imprime que des noms et des numéros de ligne."""
+    g = globals()
+    ps.BACKEND = types.SimpleNamespace(**{k: g[k] for k in ("ecrire_env_user", "lire_env_user", "lire_registre", "ajouter_registre")})
+    chemin = Path(args.fichier) if args.fichier else None
+    poses, erreurs, echecs, vide = ps.poser_fichier(chemin, vider_apres=not args.sans_vider)
+    for n in poses:
+        print(f"posé : {n}")
+    for i in erreurs:
+        print(f"ligne {i} mal formée (NOM=valeur attendu), ignorée")
+    for n in echecs:
+        print(f"échec : {n} (fichier conservé)")
+    print(f"total : {len(poses)} posé(s)" + (" ; fichier vidé" if vide else ""))
+    if poses:
+        avertir_hors_repo()
+        print("Redémarrer VS Code pour que Claude Code les voie.")
+    return 1 if echecs else 0
+
+
 def cmd_poser(args) -> int:
+    if args.fichier is not None:
+        return cmd_poser_fichier(args)
+    if not args.nom:
+        print("NOM requis (ou --fichier)")
+        return 2
     nom = args.nom
     if not NOM_VALIDE.match(nom):
         print(f"nom invalide : {nom} (lettres, chiffres, _)")
@@ -424,6 +451,10 @@ def cmd_ssl(args) -> int:
         ecrire_env_user(n, v)
         ajouter_registre(n, "config SSL, non secret", "tous les outils HTTPS")
     avertir_hors_repo()
+    try:
+        ps.assurer_gabarit()
+    except OSError:
+        pass
     code, _ = _executer([sys.executable, "-m", "pip", "config", "set", "global.cert", BUNDLE])
     print("posées (config SSL, non secrètes) : " + ", ".join(valeurs))
     print("pip.ini : global.cert posé" if code == 0
@@ -549,8 +580,11 @@ def parser() -> argparse.ArgumentParser:
     i.add_argument("--json", action="store_true")
     sub.add_parser("verifier")
     p = sub.add_parser("poser")
-    p.add_argument("nom")
+    p.add_argument("nom", nargs="?")
     p.add_argument("--usage", default="")
+    p.add_argument("--fichier", nargs="?", const="", default=None,
+                   help="pose les NOM=valeur de a_poser.env (chemin optionnel)")
+    p.add_argument("--sans-vider", action="store_true")
     s = sub.add_parser("ssl")
     s.add_argument("--sans-requests", action="store_true", help="refusé : REQUESTS_CA_BUNDLE casse snow")
     s.add_argument("--requests", action="store_true", help=argparse.SUPPRESS)

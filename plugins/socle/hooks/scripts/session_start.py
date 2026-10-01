@@ -96,6 +96,26 @@ def digest():
     return []
 
 
+def depot_secrets():
+    """Pose les NOM=valeur de a_poser.env en variables utilisateur puis vide le fichier. Jamais la valeur."""
+    sys.path.insert(0, HERE)
+    import poser_secrets
+    p = poser_secrets.assurer_gabarit()
+    paires, _ = poser_secrets.lire_paires(p)
+    if not paires:
+        return []
+    poses, _, echecs, vide = poser_secrets.poser_fichier(p)
+    out = []
+    if poses:
+        out.append(f"SOCLE : {len(poses)} secret(s) posé(s) depuis a_poser.env"
+                   + (" (fichier vidé)" if vide else " (fichier conservé)") + " : " + ", ".join(poses)
+                   + ". Redémarrer VS Code pour que les process les voient.")
+    if echecs:
+        out.append("ATTENTION a_poser.env : échec de pose pour " + ", ".join(echecs)
+                   + " : secrets.py poser --fichier")
+    return out
+
+
 def audit():
     sys.path.insert(0, HERE)
     import garde_socle
@@ -106,7 +126,7 @@ def audit():
 
 def main():
     sortie = []
-    for fn in (controle_ssl, controle_emplacements, sync_lib, digest, audit):
+    for fn in (controle_ssl, depot_secrets, controle_emplacements, sync_lib, digest, audit):
         try:
             sortie += fn() or []
         except Exception:

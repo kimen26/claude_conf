@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PreToolUse (Bash|Write|Edit|MultiEdit) : refuse les gestes que le socle interdit.
+"""PreToolUse (Bash|PowerShell|Read|Write|Edit|MultiEdit) : refuse les gestes que le socle interdit.
 
 Exit 2 + motif sur stderr (une phrase, jamais la valeur d'un secret).
 Tout le reste, y compris entrée invalide : exit 0 silencieux.
@@ -49,6 +49,16 @@ def tmp_cree(cmd):
     return False
 
 
+MSG_DEPOT = "a_poser.env ne se lit jamais : il se pose par session_start ou secrets.py poser --fichier"
+VERBES_LECTURE = re.compile(
+    r"(?<![\w-])(?:cat|type|Get-Content|gc|less|more|head|tail|grep|rg|sed|awk|bat|source|Select-String|sls)(?![\w-])"
+    r"|rtk\s+read", re.I)
+
+
+def lit_depot(cmd):
+    return "a_poser.env" in cmd and bool(VERBES_LECTURE.search(cmd))
+
+
 def refuser(msg):
     try:
         sys.stderr.reconfigure(encoding="utf-8")
@@ -86,6 +96,8 @@ def verifier_fichier(chemin, textes):
     p = chemin.replace("\\", "/")
     base = os.path.basename(p)
     texte = "\n".join(textes)
+    if base == "a_poser.env":  # seul fichier où un secret s'écrit
+        return
     if TMP_PATH.match(p) and not any(s in p for s in ("/socle/hooks/", "/socle/tests/", "/socle/lib/")):
         refuser(MSG_TMP)
     # Les sources du socle citent ces motifs pour les détecter : on ne les bloque pas.
@@ -113,7 +125,15 @@ def main():
         return
     if outil == "Bash":
         if isinstance(ti.get("command"), str):
+            if lit_depot(ti["command"]):
+                refuser(MSG_DEPOT)
             verifier_bash(ti["command"])
+    elif outil == "PowerShell":
+        if isinstance(ti.get("command"), str) and lit_depot(ti["command"]):
+            refuser(MSG_DEPOT)
+    elif outil == "Read":
+        if isinstance(ti.get("file_path"), str) and os.path.basename(ti["file_path"].replace("\\", "/")) == "a_poser.env":
+            refuser(MSG_DEPOT)
     elif outil in ("Write", "Edit", "MultiEdit"):
         if isinstance(ti.get("file_path"), str):
             verifier_fichier(ti["file_path"], textes_ajoutes(ti))
