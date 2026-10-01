@@ -1,0 +1,9 @@
+project_name: "A renseigner"
+default_status: "Todo"
+statuses: ["Todo", "Ready", "Dev", "Recette", "Relecture", "Valide", "Livre", "Rejete"]
+labels: []
+date_format: yyyy-mm-dd
+default_editor: ""
+auto_open_browser: false
+default_port: 6420
+auto_commit: false

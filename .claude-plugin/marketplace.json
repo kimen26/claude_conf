@@ -1,0 +1,13 @@
+{
+  "name": "yann",
+  "owner": { "name": "Yann Ponaire" },
+  "metadata": { "description": "Marketplace personnelle de Yann Ponaire : le socle de méthode" },
+  "plugins": [
+    {
+      "name": "socle",
+      "source": "./plugins/socle",
+      "description": "Socle de méthode de Yann : gardes, agents, skills, gabarits",
+      "version": "2026.10.1"
+    }
+  ]
+}

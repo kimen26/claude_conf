@@ -1,0 +1,8 @@
+{
+  "name": "socle",
+  "version": "2026.10.1",
+  "description": "Socle de méthode de Yann : gardes, agents, skills, gabarits",
+  "author": { "name": "Yann Ponaire" },
+  "hooks": "./hooks/hooks.json",
+  "skills": ["./skills/"]
+}

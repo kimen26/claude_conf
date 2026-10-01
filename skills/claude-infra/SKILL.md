@@ -38,6 +38,14 @@ Skill parapluie. Identifier le besoin dans la table, charger UNIQUEMENT le modul
 - Doc live : URLs canoniques dans `references/refresh-doc.md`
 - Repos de référence : `references/repos.md` (rapatrié de claude-code-mastery, 2026-09-02)
 
+## Nettoyage par l'usage (mesure réelle)
+
+- `python scripts/usage.py` : lit `~/.claude/projects/*/*.jsonl`, croise skills, agents et MCP déclarés, rend un tableau (appels, dernier usage, verdict actif < 30 j, dormant 30 à 90 j, inutilisé).
+- `python scripts/usage.py --radical` : liste ce qui serait déplacé ; avec `--oui`, déplace les skills et agents `inutilisé` vers `~/.claude/_a_supprimer/<AAAA-MM-JJ>/` avec `MANIFESTE.md`.
+- Ne supprime jamais : Yann supprime lui-même. Exclus d'office : `nouveau-projet`, `claude-infra`, `Sync-Skills-github-ProPerso`, `netskope-ssl`.
+- Limite : les transcripts purgés par Claude Code ne comptent pas ; `jamais` veut dire « pas dans l'historique conservé ».
+- Toujours montrer le tableau à Yann et obtenir son accord avant `--oui`.
+
 ## Maintenance du skill (procédure MAJ)
 
 **Version : 2026-09-02** (v1 fusion 4 skills ; v2 intègre grille de décision + triage orphelins + module application repris de CheiKh).

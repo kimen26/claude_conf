@@ -1,0 +1,429 @@
+#!/usr/bin/env python3
+"""Moteur d'audit du socle (lecture seule).
+
+Usage : python garde_socle.py [--session | --complet | --json] [chemin]
+Un dossier sans .git est ignoré (sortie vide, exit 0). Exit 0 toujours,
+sauf --complet qui sort 1 s'il y a des écarts.
+"""
+import json
+import os
+import re
+import subprocess
+import sys
+from collections import namedtuple
+
+Ecart = namedtuple("Ecart", "code fichier ligne regle correctif")
+
+GRAVITE = ["S-30", "S-10", "S-20", "S-40", "S-01", "S-02", "S-03", "S-50", "S-60"]
+EXCLUS = {".venv", "venv", "node_modules", "_a_supprimer", ".git", ".snowflake", "__pycache__"}
+PROFIL_OK = "c:/tmp/claude/pw-profile"
+STATUTS = ["Todo", "Ready", "Dev", "Recette", "Relecture", "Valide", "Livre", "Rejete"]
+
+SECRETS = [
+    r"sbp_[0-9a-f]{20,}",
+    r"ghp_[A-Za-z0-9]{20,}",
+    r"glpat-[A-Za-z0-9_-]{15,}",
+    r"SUPABASE_ACCESS_TOKEN=\S+",
+    r"(PASSWORD|MOT_DE_PASSE|TOKEN|SECRET)\s*=\s*['\"][^'\"$]{8,}",
+]
+SECRETS_RE = [re.compile(p) for p in SECRETS]
+
+
+def plugin_root():
+    r = os.environ.get("CLAUDE_PLUGIN_ROOT")
+    if r:
+        return r
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def _lire(chemin, defaut=""):
+    try:
+        with open(chemin, encoding="utf-8", errors="replace") as f:
+            return f.read()
+    except OSError:
+        return defaut
+
+
+_CACHE = {}
+
+
+def _index_git(racine):
+    """Fichiers suivis lus dans .git/index (versions 2 à 4), sans lancer git. None si illisible."""
+    import struct
+    with open(os.path.join(racine, ".git", "index"), "rb") as f:
+        b = f.read()
+    if b[:4] != b"DIRC":
+        return None
+    ver, n = struct.unpack(">II", b[4:12])
+    if ver not in (2, 3, 4):
+        return None
+    pos, prev, out = 12, b"", []
+    for _ in range(n):
+        flags = struct.unpack(">H", b[pos + 60:pos + 62])[0]
+        debut = pos
+        pos += 62
+        if ver >= 3 and flags & 0x4000:
+            pos += 2
+        if ver == 4:
+            c = b[pos]
+            pos += 1
+            retire = c & 127
+            while c & 128:
+                c = b[pos]
+                pos += 1
+                retire = ((retire + 1) << 7) | (c & 127)
+            fin = b.index(b"\0", pos)
+            chemin = prev[:len(prev) - retire] + b[pos:fin]
+            pos = fin + 1
+        else:
+            fin = b.index(b"\0", pos)
+            chemin = b[pos:fin]
+            pos = debut + ((fin + 8 - debut) // 8) * 8
+        prev = chemin
+        out.append(chemin.decode("utf-8", "replace"))
+    return sorted(set(out))
+
+
+def _fichiers_suivis(racine):
+    cle = ("suivis", racine)
+    if cle not in _CACHE:
+        res = None
+        if os.path.isdir(os.path.join(racine, ".git")):
+            try:
+                res = _index_git(racine)
+            except Exception:
+                res = None
+        if res is None:
+            try:
+                out = subprocess.run(["git", "ls-files", "-z"], cwd=racine, capture_output=True, timeout=10).stdout
+                res = [p for p in out.decode("utf-8", "replace").split("\0") if p]
+            except Exception:
+                res = []
+        _CACHE[cle] = res
+    return _CACHE[cle]
+
+
+def _fichiers_py(racine):
+    """Tous les .py du projet (suivis ou non), dossiers exclus élagués."""
+    out = []
+    for dossier, sous, fichiers in os.walk(racine):
+        sous[:] = [d for d in sous if d not in EXCLUS]
+        for f in fichiers:
+            if f.endswith(".py"):
+                out.append(os.path.relpath(os.path.join(dossier, f), racine).replace("\\", "/"))
+    return out
+
+
+def _cache_fichier(racine):
+    import hashlib
+    d = os.environ.get("CLAUDE_PLUGIN_DATA") or os.path.join(os.path.expanduser("~"), ".claude", "plugins", "data", "socle")
+    return os.path.join(d, "cache", hashlib.sha1(racine.encode("utf-8", "replace")).hexdigest()[:16] + ".json")
+
+
+def _charger_cache(racine):
+    try:
+        with open(_cache_fichier(racine), encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _sauver_cache(racine, cache):
+    try:
+        p = _cache_fichier(racine)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "w", encoding="utf-8") as f:
+            json.dump(cache, f)
+    except Exception:
+        pass
+
+
+def _exclu(rel):
+    return any(p in EXCLUS for p in rel.replace("\\", "/").split("/"))
+
+
+def s_01(racine):
+    p = os.path.join(racine, "CLAUDE.md")
+    if not os.path.isfile(p):
+        return [Ecart("S-01", "CLAUDE.md", 0, "CLAUDE.md absent", "créer un CLAUDE.md court (/socle:nouveau-projet)")]
+    n = len(_lire(p).splitlines())
+    if n >= 100:
+        return [Ecart("S-01", "CLAUDE.md", n, f"CLAUDE.md fait {n} lignes (max 99)", "déplacer le détail vers des skills ou rules")]
+    return []
+
+
+def s_02(racine):
+    mem = os.path.join(racine, "memory")
+    manque = [f for f in ("TODO.md", "LESSONS.md", "DECISIONS.md", "CHANGELOG.md", "MEMORY.md")
+              if not os.path.isfile(os.path.join(mem, f))]
+    if not manque:
+        return []
+    for nom in ("CLAUDE.md", "AGENTS.md"):
+        t = _lire(os.path.join(racine, nom))
+        if "memoire/" in t or "docs/adr/" in t:
+            return []
+    return [Ecart("S-02", "memory/", 0, "mémoire incomplète, manque " + ", ".join(manque),
+                  "créer le quintette memory/ ou déclarer la convention propre dans CLAUDE.md")]
+
+
+def s_03(racine):
+    t = _lire(os.path.join(racine, ".gitignore"))
+    lignes = {l.strip().lstrip("/") for l in t.splitlines()}
+    out = []
+    for motif, variantes in ((".env", {".env", ".env*"}), (".auth/", {".auth/", ".auth"}),
+                             ("__pycache__/", {"__pycache__/", "__pycache__", "*.pyc"}),
+                             ("_a_supprimer/", {"_a_supprimer/", "_a_supprimer"})):
+        if not variantes & lignes:
+            out.append(Ecart("S-03", ".gitignore", 0, f".gitignore ne couvre pas {motif}", f"ajouter {motif} au .gitignore"))
+    return out
+
+
+def s_10(racine):
+    p = os.path.join(racine, ".mcp.json")
+    if not os.path.isfile(p):
+        return []
+    try:
+        data = json.loads(_lire(p))
+    except ValueError:
+        return [Ecart("S-10", ".mcp.json", 0, ".mcp.json illisible", "corriger le JSON")]
+    out = []
+    ok = re.compile(r"^\$\{[A-Za-z_][A-Za-z0-9_]*(:-[^}]*)?\}$")
+    for nom, srv in (data.get("mcpServers") or {}).items():
+        if not isinstance(srv, dict):
+            continue
+        cmd = str(srv.get("command", ""))
+        args = [str(a) for a in (srv.get("args") or [])]
+        if "npx" in os.path.basename(cmd).lower() and any("@latest" in a for a in args):
+            out.append(Ecart("S-10", ".mcp.json", 0, f"serveur {nom} : npx avec @latest", "épingler une version exacte, ou passer en HTTP"))
+        if any("@playwright/mcp" in a for a in [cmd] + args):
+            out.append(Ecart("S-10", ".mcp.json", 0, f"serveur {nom} : @playwright/mcp", "utiliser preuve_navigateur, pas le MCP"))
+        for k, v in (srv.get("env") or {}).items():
+            if not ok.match(str(v)):
+                out.append(Ecart("S-10", ".mcp.json", 0, f"serveur {nom} : env {k} en clair", "écrire ${VAR} et mettre la valeur dans .env"))
+    return out
+
+
+def _analyser(racine, rel, py):
+    """Lit un fichier et rend ses constats bruts : {'s30': [[ligne, motif]], 's20': [[ligne, kind]]}."""
+    p = os.path.join(racine, rel)
+    res = {"s30": [], "s20": []}
+    try:
+        if os.path.getsize(p) > 2_000_000:
+            return res
+        with open(p, "rb") as f:
+            b = f.read()
+    except OSError:
+        return res
+    if b"\0" in b[:8192]:
+        return res
+    t = b.decode("utf-8", "replace")
+    est_lib = os.path.basename(rel) == "preuve_navigateur.py"
+    if py and not est_lib:
+        if re.search(r"(from|import)\s+playwright", t) and "preuve_navigateur" not in t:
+            res["s20"].append([0, "pw"])
+    for i, l in enumerate(t.splitlines(), 1):
+        if len(l) > 5000:
+            continue
+        for k, rx in enumerate(SECRETS_RE):
+            if rx.search(l):
+                res["s30"].append([i, SECRETS[k]])
+        if py and not est_lib:
+            if "storage_state" in l or "connect_over_cdp" in l:
+                res["s20"].append([i, "st"])
+            m = (re.search(r"launch_persistent_context\(\s*[rf]?[\"']([^\"']+)", l)
+                 or re.search(r"user_data_dir\s*=\s*[rf]?[\"']([^\"']+)", l))
+            if m and m.group(1).replace("\\", "/").lower() != PROFIL_OK:
+                res["s20"].append([i, "pf"])
+    return res
+
+
+def _constats(racine):
+    """Analyse (avec cache par taille et mtime) des fichiers suivis et des .py du projet."""
+    if ("constats", racine) in _CACHE:
+        return _CACHE[("constats", racine)]
+    suivis = _fichiers_suivis(racine)
+    tous = {r: False for r in suivis}
+    for r in _fichiers_py(racine):
+        tous[r] = True
+    for r in suivis:
+        if r.endswith(".py") and not _exclu(r):
+            tous[r] = True
+    cache = _charger_cache(racine)
+    neuf, a_faire = {}, []
+    for rel, py in tous.items():
+        try:
+            st = os.stat(os.path.join(racine, rel))
+        except OSError:
+            continue
+        cle = [st.st_size, st.st_mtime_ns, py]
+        old = cache.get(rel)
+        if old and old["k"] == cle:
+            neuf[rel] = old
+        else:
+            a_faire.append((rel, py, cle))
+    if a_faire:
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(8) as ex:
+            for (rel, py, cle), res in zip(a_faire, ex.map(lambda a: _analyser(racine, a[0], a[1]), a_faire)):
+                neuf[rel] = dict(res, k=cle)
+        _sauver_cache(racine, neuf)
+    elif len(neuf) != len(cache):
+        _sauver_cache(racine, neuf)
+    _CACHE[("constats", racine)] = neuf
+    return neuf
+
+
+LIBELLES_S20 = {
+    "pw": ("playwright sans preuve_navigateur", "importer preuve_navigateur"),
+    "st": ("storage_state/connect_over_cdp interdit", "le SSO vit dans le profil partagé, setup_sso() de preuve_navigateur"),
+    "pf": ("profil persistant hors C:/tmp/claude/pw-profile", "utiliser le profil partagé via preuve_navigateur"),
+}
+
+
+def s_20(racine):
+    out = []
+    for rel, c in _constats(racine).items():
+        if _exclu(rel):
+            continue
+        for ligne, kind in c["s20"]:
+            out.append(Ecart("S-20", rel, ligne, *LIBELLES_S20[kind]))
+    return out
+
+
+def s_30(racine):
+    suivis = set(_fichiers_suivis(racine))
+    out = []
+    for rel in sorted(suivis):
+        if os.path.basename(rel) == ".env":
+            out.append(Ecart("S-30", rel, 0, ".env suivi par git", "git rm --cached et l'ajouter au .gitignore"))
+    for rel, c in _constats(racine).items():
+        if rel in suivis:
+            for ligne, motif in c["s30"]:
+                out.append(Ecart("S-30", rel, ligne, f"secret probable (motif {motif})", "retirer la valeur, la révoquer, la mettre dans .env"))
+    return out
+
+
+def s_40(racine):
+    out = []
+    pr = plugin_root()
+    for sous, plug, suffixe in ((".claude/agents", "agents", ".md"), (".claude/hooks", "hooks/scripts", ".py")):
+        d = os.path.join(racine, sous)
+        if os.path.isdir(d):
+            for f in os.listdir(d):
+                if f.endswith(suffixe) and os.path.isfile(os.path.join(pr, plug, f)):
+                    out.append(Ecart("S-40", f"{sous}/{f}", 0, "doublon d'un élément du plugin socle", "supprimer la copie du projet"))
+    d = os.path.join(racine, ".claude", "skills")
+    if os.path.isdir(d):
+        for f in os.listdir(d):
+            if os.path.isfile(os.path.join(d, f, "SKILL.md")) and os.path.isdir(os.path.join(pr, "skills", f)):
+                out.append(Ecart("S-40", f".claude/skills/{f}/SKILL.md", 0, "doublon d'un skill du plugin socle", "supprimer la copie du projet"))
+    if '"mcpServers"' in _lire(os.path.join(racine, ".claude", "settings.json")):
+        out.append(Ecart("S-40", ".claude/settings.json", 0, "mcpServers dans settings.json : clé ignorée", "déplacer vers .mcp.json"))
+    return out
+
+
+def s_50(racine):
+    b = os.path.join(racine, "backlog")
+    if not os.path.isdir(b):
+        return [Ecart("S-50", "backlog/", 0, "backlog/ absent", "créer le backlog (config.yml, tasks/, board.md)")]
+    out = []
+    cfg = _lire(os.path.join(b, "config.yml"))
+    if not cfg:
+        out.append(Ecart("S-50", "backlog/config.yml", 0, "config.yml absent", "créer config.yml avec les 8 statuts"))
+    else:
+        manque = [s for s in STATUTS if s not in cfg]
+        if manque:
+            out.append(Ecart("S-50", "backlog/config.yml", 0, "statuts manquants : " + ", ".join(manque), "ajouter les statuts au config.yml"))
+    board = os.path.join(b, "board.md")
+    td = os.path.join(b, "tasks")
+    tm = [os.path.getmtime(os.path.join(td, f)) for f in os.listdir(td) if f.endswith(".md")] if os.path.isdir(td) else []
+    if not tm:
+        return out  # aucune tâche : pas de board à exiger (projet neuf)
+    if not os.path.isfile(board):
+        out.append(Ecart("S-50", "backlog/board.md", 0, "board.md absent", "backlog board export"))
+    elif os.path.getmtime(board) < max(tm):
+        out.append(Ecart("S-50", "backlog/board.md", 0, "board.md plus ancien que les tâches", "backlog board export"))
+    return out
+
+
+def s_60(racine):
+    return [Ecart("S-60", f"outils/{f}", 0, f"outils/{f} absent", f"créer outils/{f} (commande conventionnelle)")
+            for f in ("portes.py", "smoke.py", "deployer.py") if not os.path.isfile(os.path.join(racine, "outils", f))]
+
+
+CONTROLES = [s_01, s_02, s_03, s_10, s_20, s_30, s_40, s_50, s_60]
+
+
+def _rang(code):
+    return GRAVITE.index(code) if code in GRAVITE else 99
+
+
+def auditer(racine):
+    if not os.path.isdir(os.path.join(racine, ".git")):
+        return []
+    out = []
+    for fn in CONTROLES:
+        try:
+            out.extend(fn(racine))
+        except Exception as e:  # un contrôle cassé ne casse pas les autres
+            out.append(Ecart(fn.__name__.replace("s_", "S-"), "", 0, f"contrôle en erreur : {type(e).__name__}", "corriger garde_socle.py"))
+    out.sort(key=lambda e: _rang(e.code))
+    return out
+
+
+def _loc(e):
+    return f"{e.fichier}:{e.ligne}" if e.ligne else e.fichier
+
+
+def rendu_session(ecarts):
+    if not ecarts:
+        return []
+    cpt = {}
+    for e in ecarts:
+        cpt[e.code] = cpt.get(e.code, 0) + 1
+    resume = ", ".join(f"{c} x{cpt[c]}" for c in sorted(cpt, key=_rang))
+    lignes = [f"SOCLE : {len(ecarts)} écarts ({resume}) -> /socle:nouveau-projet remise-au-pas"]
+    lignes += [f"  {e.code} {_loc(e)} : {e.regle}" for e in ecarts[:2]]
+    return lignes
+
+
+def rendu_complet(ecarts):
+    if not ecarts:
+        return ["SOCLE : 0 écart"]
+    rows = [("code", "fichier:ligne", "règle", "correctif")] + [(e.code, _loc(e), e.regle, e.correctif) for e in ecarts]
+    w = [max(len(r[i]) for r in rows) for i in range(3)]
+    lignes = ["  ".join(r[i].ljust(w[i]) for i in range(3)) + "  " + r[3] for r in rows]
+    return lignes + ["", f"Total : {len(ecarts)} écarts"]
+
+
+def main(argv):
+    """Rend (lignes, code de sortie)."""
+    mode = "session"
+    chemin = None
+    for a in argv:
+        if a in ("--session", "--complet", "--json"):
+            mode = a[2:]
+        elif not a.startswith("--"):
+            chemin = a
+    racine = os.path.abspath(chemin or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+    ecarts = auditer(racine)
+    if mode == "json":
+        lignes = [json.dumps([e._asdict() for e in ecarts], ensure_ascii=False)]
+    elif mode == "complet":
+        lignes = rendu_complet(ecarts) if os.path.isdir(os.path.join(racine, ".git")) else []
+    else:
+        lignes = rendu_session(ecarts)
+    return lignes, (1 if (mode == "complet" and ecarts) else 0)
+
+
+if __name__ == "__main__":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        lignes, code = main(sys.argv[1:])
+        if lignes:
+            print("\n".join(lignes))
+        sys.exit(code)
+    except SystemExit:
+        raise
+    except Exception:
+        sys.exit(0)

@@ -1,0 +1,9 @@
+.env
+.env.*
+.auth/
+_a_supprimer/
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+inbox/
