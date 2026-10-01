@@ -1,4 +1,4 @@
-# Socle actif v2026.10.7
+# Socle actif v2026.10.8
 
 Méthode complète : ${CLAUDE_PLUGIN_ROOT}/rules/methode.md (dix temps, statuts, transitions).
 

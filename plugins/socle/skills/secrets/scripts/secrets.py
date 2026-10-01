@@ -246,7 +246,9 @@ def _mapping(rows, emplacement, mapping, type_, entete=False):
     for k, v in mapping.items():
         e = _etat_valeur(k, v, entete)
         if e:
-            rows.append(_ligne(emplacement, k, type_, e))
+            l = _ligne(emplacement, k, type_, e)
+            l["ref"] = isinstance(v, str) and "${" in v and not ms.a_motif(v)
+            rows.append(l)
 
 
 def _serveurs(rows, emplacement, serveurs, type_):
@@ -373,7 +375,10 @@ def inventaire(projets: list[Path]) -> list[Ligne]:
             continue
         gardee = next((x for x in lignes if x["type"] == "env_user"), lignes[0])
         for r in lignes:
-            if r is not gardee and r["etat"] == "conforme" and r["type"] != "env_user":
+            # une référence ${NOM} est l'usage voulu : jamais un doublon
+            if r is gardee or r["type"] == "env_user" or r.get("ref"):
+                continue
+            if r["etat"] in ("conforme", "a_deplacer") and (r["etat"] == "conforme" or gardee["type"] == "env_user"):
                 r["etat"] = "doublon"
     return rows
 

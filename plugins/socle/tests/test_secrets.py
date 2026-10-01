@@ -73,14 +73,14 @@ def test_inventaire_etats_attendus(faux, capsys):
     par = {}
     for r in rows:
         par.setdefault(r["etat"], []).append(r)
-    assert len(par["a_deplacer"]) == 3  # settings FAUX_TOKEN, secrets.ps1, connexion pwd.password
-    assert {r["type"] for r in par["a_deplacer"]} == {"settings_env", "secrets_ps1", "snowflake"}
+    assert len(par["a_deplacer"]) == 2  # secrets.ps1, connexion pwd.password (settings FAUX_TOKEN = doublon, la variable user existe)
+    assert {r["type"] for r in par["a_deplacer"]} == {"secrets_ps1", "snowflake"}
     assert any(r["nom"] == "pwd.password" for r in par["a_deplacer"])
     ps1 = [r["nom"] for r in rows if r["type"] == "secrets_ps1"]
     assert ps1 == ["CONF_API_TOKEN"]  # ni CONF_URL (pas un secret), ni le modèle .template.ps1
     assert [r["nom"] for r in par["config_morte"]] == ["mcpServers"]
     assert sorted(r["nom"] for r in par["sauvegarde_a_purger"]) == ["settings.json.bak", "x.backup"]
-    assert [r["type"] for r in par["doublon"]] == ["env_fichier"]
+    assert sorted(r["type"] for r in par["doublon"]) == ["env_fichier", "settings_env"]
     assert [r["nom"] for r in par["hors_registre"]] == ["FAUX_TOKEN"]
     assert any(r["nom"] == "OK_TOKEN" and r["etat"] == "conforme" for r in rows)
     assert not any(r["nom"] == "THEME" or r["nom"] == "PATH" for r in rows)
@@ -469,3 +469,19 @@ def test_ajout_dans_ancien_format_reste_lisible(faux):
     sec.ajouter_registre("NEUF_C", "u")
     assert sec.lire_registre()["NEUF_C"]["statut"] == "requis"
     assert sec.lire_registre()["MON_TOKEN"]["usage"] == "essai"
+
+
+def _claude_json(faux, valeur):
+    ecrire(faux["claude"] / ".claude.json", json.dumps({"mcpServers": {"confluence": {"env": {"X_API_TOKEN": valeur}}}}))
+    faux["env"][:] = ["X_API_TOKEN"]
+    return [r for r in sec.inventaire([faux["proj"]]) if r["nom"] == "X_API_TOKEN" and r["type"] == "claude_json_mcp"]
+
+
+def test_reference_dans_claude_json_est_conforme(faux):
+    rows = _claude_json(faux, "${X_API_TOKEN}")
+    assert [r["etat"] for r in rows] == ["conforme"]
+
+
+def test_valeur_en_clair_avec_variable_user_est_doublon(faux):
+    rows = _claude_json(faux, "valeurFactice" + "12345")
+    assert [r["etat"] for r in rows] == ["doublon"]
