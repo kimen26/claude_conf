@@ -2,7 +2,7 @@
 
 Vocabulaire : **secret** (une valeur), **registre** (la liste des noms, `secrets-registre.md`),
 **poser** (mettre en variable d'environnement utilisateur), **tourner** (révoquer et reposer).
-**Poser = écrire `NOM=valeur` dans `%LOCALAPPDATA%\socle\a_poser.env`, c'est tout.** À l'ouverture de la
+**Poser = écrire `NOM=valeur` dans `%LOCALAPPDATA%\socle\a_poser.env`, c'est tout.** Voies pour poser un secret, dans cet ordre : (1) écrire `NOM=valeur` dans `%LOCALAPPDATA%\socle\a_poser.env` (ouvert par `notepad "$env:LOCALAPPDATA\socle\a_poser.env"`), posé à la session suivante ou par `secrets.py poser --fichier` ; (2) l'écran Windows des variables utilisateur (`rundll32 sysdm.cpl,EditEnvironmentVariables`). `poser NOM` au clavier = seulement depuis un vrai terminal, jamais depuis le chat (Claude n'a pas de clavier). Registre à deux statuts : `requis` (absent = MANQUE, exit 1) et `reserve` (pas utilisé pour le moment ; absent = information, exit 0). À l'ouverture de la
 session suivante (ou par `secrets.py poser --fichier`), chaque ligne devient une variable utilisateur, son NOM
 entre au registre et le fichier est vidé (gabarit seul). Ce fichier ne se lit jamais par un agent
 (`garde_outils` refuse Read, cat, type, Get-Content) et c'est le seul où un Write contenant un secret passe.
@@ -11,7 +11,7 @@ et ne recopie jamais une valeur.
 
 | Chose | Emplacement UNIQUE | Interdit |
 |---|---|---|
-| Secret transverse (PAT GitLab, token Confluence, n8n, Supabase, clés API) | variable d'environnement UTILISATEUR Windows, posée une fois en écrivant `NOM=valeur` dans `a_poser.env` (ou `/socle:secrets poser NOM`, saisie masquée) ; son NOM est inscrit au registre `rules/secrets-registre.md` (nom, usage, consommateurs, date de pose) | `settings.json` → `env`, `.claude.json`, `secrets.ps1`, tout `.bak` |
+| Secret transverse (PAT GitLab, token Confluence, n8n, Supabase, clés API) | variable d'environnement UTILISATEUR Windows, posée une fois en écrivant `NOM=valeur` dans `a_poser.env` (ou l'écran Windows des variables ; `poser NOM` au vrai terminal seulement) ; son NOM est inscrit au registre `rules/secrets-registre.md` (nom, usage, consommateurs, date de pose) | `settings.json` → `env`, `.claude.json`, `secrets.ps1`, tout `.bak` |
 | Secret propre à un projet, lu par un script | `.env` git-ignoré + `.env.example` versionné (noms seuls), chargé par python-dotenv | valeur dans le code, un `.md`, un test |
 | Secret consommé par un MCP ou un hook | variable d'environnement user (Claude Code n'étend `${VAR}` que depuis l'environnement du process, pas depuis `.env`) ; `.mcp.json` écrit `${NOM}` | valeur en clair dans `.mcp.json` ou `settings.json` |
 | Snowflake | `~/.snowflake/connections.toml` seul, `authenticator = externalbrowser` et `client_store_temporary_credential = true` sur chaque connexion, le code ne connaît qu'un `connection_name`. Le socle LIT ce fichier, ne l'écrit jamais | `SNOWFLAKE_PASSWORD`, clé privée, PAT, account/user en dur, « sandbox », « compte de service » |

@@ -24,7 +24,7 @@ Audit manuel : `python hooks/scripts/garde_socle.py --complet [chemin]`.
 Toute modification du plugin impose un bump de `version` dans `plugin.json` ET `marketplace.json` (même valeur), sinon `claude plugin update` répond « already at the latest version » et le cache garde l'ancien code.
 
 ## Secrets
-- Un secret est une variable d'environnement utilisateur : on écrit `NOM=valeur` dans `%LOCALAPPDATA%\socle\a_poser.env`, la session suivante (ou `secrets.py poser --fichier`) le pose et vide le fichier (jamais lu par un agent) ; son nom est au registre `rules/secrets-registre.md`.
+- Un secret est une variable d'environnement utilisateur. Voies, dans cet ordre : (1) écrire `NOM=valeur` dans `%LOCALAPPDATA%\socle\a_poser.env` (ouvert par `notepad "$env:LOCALAPPDATA\socle\a_poser.env"`), posé à la session suivante ou par `secrets.py poser --fichier` ; (2) l'écran Windows des variables utilisateur (`rundll32 sysdm.cpl,EditEnvironmentVariables`). `poser NOM` au clavier = seulement depuis un vrai terminal, jamais depuis le chat (Claude n'a pas de clavier). Le nom est au registre `rules/secrets-registre.md` (statut `requis` ou `reserve`).
 - Jamais dans `settings.json`, `.claude.json`, un `.bak` ou un `secrets.ps1` : les gardes S-30 à S-37 et `garde_outils` le refusent.
 - Projet : `.env` git-ignoré + `.env.example` versionné. MCP : `${NOM}` dans `.mcp.json`. Snowflake : SSO `connections.toml` seul.
 - Commandes : `inventaire`, `verifier`, `poser` (`--fichier`), `ssl`, `purger`, `snow`. Doctrine complète : `rules/secrets.md`. Emplacements (`C:/tmp` interdit) : `rules/emplacements.md`.

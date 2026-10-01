@@ -3,8 +3,8 @@
 
     secrets.py inventaire [chemin] [--json]
     secrets.py verifier
-    secrets.py poser NOM [--usage "..."]
-    secrets.py poser --fichier [chemin] [--sans-vider]
+    secrets.py poser NOM [--usage "..."] [--reserve]
+    secrets.py poser --fichier [chemin] [--sans-vider] [--reserve]
     secrets.py ssl
     secrets.py purger [--oui]
     secrets.py snow
@@ -112,39 +112,73 @@ def ecrire_env_user(nom: str, valeur: str) -> None:
 
 
 # ------------------------------------------------------------------ registre
+STATUTS = ("requis", "reserve")
+ENTETE_REGISTRE = ("| nom | statut | usage | consommateurs | posé le |\n"
+                   "|---|---|---|---|---|\n")
+
+
+def _cellules(ligne: str) -> list[str]:
+    return [x.strip() for x in ligne.strip().strip("|").split("|")]
+
+
+def _a_statut(lignes: list[str]) -> bool:
+    """Le tableau porte-t-il une colonne statut ? (entête lue ; ancien format = non)"""
+    for l in lignes:
+        if l.strip().startswith("|"):
+            c = [x.lower() for x in _cellules(l)]
+            return len(c) > 1 and c[0] == "nom" and c[1] == "statut"
+    return True
+
+
 def lire_registre() -> dict[str, dict]:
-    """{nom: {usage, consommateurs, pose}} lu dans le tableau Markdown du registre."""
+    """{nom: {statut, usage, consommateurs, pose}}. Ancienne ligne sans colonne statut = requis."""
     p = chemin_registre()
     out: dict[str, dict] = {}
     if not p.is_file():
         return out
-    for l in p.read_text(encoding="utf-8", errors="replace").splitlines():
+    lignes = p.read_text(encoding="utf-8", errors="replace").splitlines()
+    nouveau = _a_statut(lignes)
+    for l in lignes:
         if not l.strip().startswith("|"):
             continue
-        c = [x.strip() for x in l.strip().strip("|").split("|")]
+        c = _cellules(l)
         nom = c[0].strip("`") if c else ""
-        if len(c) >= 4 and NOM_VALIDE.match(nom) and nom.upper() == nom:
-            out[nom] = {"usage": c[1], "consommateurs": c[2], "pose": c[3]}
+        if not (NOM_VALIDE.match(nom) and nom.upper() == nom):
+            continue
+        if nouveau and len(c) >= 5:
+            statut = c[1].strip("`").lower()
+            out[nom] = {"statut": statut if statut in STATUTS else "requis",
+                        "usage": c[2], "consommateurs": c[3], "pose": c[4]}
+        elif len(c) >= 4:
+            out[nom] = {"statut": "requis", "usage": c[1], "consommateurs": c[2], "pose": c[3]}
     return out
 
 
-def ajouter_registre(nom: str, usage: str, consommateurs: str = "-") -> str:
-    """Ajoute la ligne si absente ; si présente, rafraîchit seulement la date. Rend 'ajoute' ou 'maj'."""
+def ajouter_registre(nom: str, usage: str, consommateurs: str = "-", statut: str = "requis") -> str:
+    """Ajoute la ligne si absente ; si présente, rafraîchit la date. Rend 'ajoute' ou 'maj'."""
+    if statut not in STATUTS:
+        raise SystemExit(f"statut invalide : {statut} (requis ou reserve)")
     p = chemin_registre()
     jour = datetime.date.today().isoformat()
     if not p.is_file():
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text("# Registre des secrets (noms seulement)\n\n| nom | usage | consommateurs | posé le |\n"
-                     "|---|---|---|---|\n", encoding="utf-8")
+        p.write_text("# Registre des secrets (noms seulement)\n\n" + ENTETE_REGISTRE, encoding="utf-8")
     lignes = p.read_text(encoding="utf-8").splitlines()
+    nouveau = _a_statut(lignes)
     for i, l in enumerate(lignes):
-        c = [x.strip() for x in l.strip().strip("|").split("|")]
-        if l.strip().startswith("|") and c and c[0].strip("`") == nom and len(c) >= 4:
-            c[3] = jour
+        c = _cellules(l)
+        if l.strip().startswith("|") and c and c[0].strip("`") == nom and len(c) >= (5 if nouveau else 4):
+            c[-1] = jour
+            if nouveau:
+                c[1] = statut
             lignes[i] = "| " + " | ".join(c) + " |"
             p.write_text("\n".join(lignes) + "\n", encoding="utf-8")
             return "maj"
-    lignes.append(f"| `{nom}` | {usage or 'à qualifier'} | {consommateurs} | {jour} |")
+    usage = usage or "à qualifier"
+    if nouveau:
+        lignes.append(f"| `{nom}` | {statut} | {usage} | {consommateurs} | {jour} |")
+    else:
+        lignes.append(f"| `{nom}` | {usage} | {consommateurs} | {jour} |")
     p.write_text("\n".join(lignes) + "\n", encoding="utf-8")
     return "ajoute"
 
@@ -371,20 +405,25 @@ def cmd_inventaire(args) -> int:
 
 
 # ------------------------------------------------------------------ verifier
-def ecarts_registre() -> tuple[list[str], list[str]]:
-    reg = set(lire_registre())
+def ecarts_registre() -> tuple[list[str], list[str], list[str]]:
+    """(requis manquants, orphelines, reserve non posees)."""
+    reg = lire_registre()
     env = set(lire_env_user())
-    manques = sorted(reg - env)
-    orphelines = sorted(n for n in env - reg if ms.nom_secret(n))
-    return manques, orphelines
+    manques = sorted(n for n, d in reg.items() if d["statut"] == "requis" and n not in env)
+    reserve = sorted(n for n, d in reg.items() if d["statut"] == "reserve" and n not in env)
+    orphelines = sorted(n for n in env - set(reg) if ms.nom_secret(n))
+    return manques, orphelines, reserve
 
 
 def cmd_verifier(_args) -> int:
-    manques, orphelines = ecarts_registre()
+    manques, orphelines, reserve = ecarts_registre()
     for n in manques:
-        print(f"MANQUE : {n} est au registre mais absente de l'environnement utilisateur -> /socle:secrets poser {n}")
+        print(f"MANQUE : {n} est au registre (requis) mais absente de l'environnement utilisateur -> "
+              f"ecrire {n}=valeur dans a_poser.env")
     for n in orphelines:
         print(f"ORPHELINE : {n} est dans l'environnement utilisateur mais pas au registre -> l'inscrire, ou la supprimer")
+    for n in reserve:
+        print(f"réserve non posée : {n}")
     interdite = "REQUESTS_CA_BUNDLE" in lire_env_user()
     if interdite:
         print("INTERDITE : REQUESTS_CA_BUNDLE est posée dans l'environnement utilisateur : elle casse snow "
@@ -399,7 +438,13 @@ def cmd_verifier(_args) -> int:
 def cmd_poser_fichier(args) -> int:
     """Pose chaque NOM=valeur du fichier de dépôt. N'imprime que des noms et des numéros de ligne."""
     g = globals()
-    ps.BACKEND = types.SimpleNamespace(**{k: g[k] for k in ("ecrire_env_user", "lire_env_user", "lire_registre", "ajouter_registre")})
+    statut = "reserve" if getattr(args, "reserve", False) else "requis"
+
+    def ajouter(nom, usage, consommateurs="-"):
+        return ajouter_registre(nom, usage, consommateurs, statut)
+
+    ps.BACKEND = types.SimpleNamespace(ecrire_env_user=g["ecrire_env_user"], lire_env_user=g["lire_env_user"],
+                                       lire_registre=g["lire_registre"], ajouter_registre=ajouter)
     chemin = Path(args.fichier) if args.fichier else None
     poses, erreurs, echecs, vide = ps.poser_fichier(chemin, vider_apres=not args.sans_vider)
     for n in poses:
@@ -430,7 +475,7 @@ def cmd_poser(args) -> int:
         print("valeur vide : rien n'est posé")
         return 2
     ecrire_env_user(nom, valeur)
-    res = ajouter_registre(nom, args.usage or "")
+    res = ajouter_registre(nom, args.usage or "", statut="reserve" if args.reserve else "requis")
     avertir_hors_repo()
     print(f"{nom} posée dans l'environnement utilisateur ; registre : {res}. "
           "Redémarrer VS Code pour que Claude Code la voie.")
@@ -585,6 +630,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--fichier", nargs="?", const="", default=None,
                    help="pose les NOM=valeur de a_poser.env (chemin optionnel)")
     p.add_argument("--sans-vider", action="store_true")
+    p.add_argument("--reserve", action="store_true", help="inscrit au registre en réserve (défaut : requis)")
     s = sub.add_parser("ssl")
     s.add_argument("--sans-requests", action="store_true", help="refusé : REQUESTS_CA_BUNDLE casse snow")
     s.add_argument("--requests", action="store_true", help=argparse.SUPPRESS)

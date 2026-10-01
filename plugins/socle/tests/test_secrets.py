@@ -419,3 +419,53 @@ def test_s37(depot, monkeypatch):
     assert all(V1 not in str(e) and V2 not in str(e) for e in ec)
     dep.vider(depot["chemin"])
     assert garde_socle.s_37("x") == []
+
+
+REGISTRE_STATUTS = ("| nom | statut | usage | consommateurs | posé le |\n|---|---|---|---|---|\n"
+                    "| `REQ_TOKEN` | requis | essai | test | 2026-01-01 |\n"
+                    "| `RES_TOKEN` | reserve | pas utilisé | test | 2026-01-01 |\n")
+
+
+def test_ancienne_ligne_sans_statut_vaut_requis(faux):
+    reg = sec.lire_registre()
+    assert reg["MON_TOKEN"]["statut"] == "requis" and reg["MON_TOKEN"]["usage"] == "essai"
+
+
+def test_verifier_requis_absent_manque(faux, monkeypatch, capsys):
+    ecrire(faux["registre"], REGISTRE_STATUTS)
+    faux["env"][:] = ["RES_TOKEN"]
+    assert sec.main(["verifier"]) == 1
+    sortie = capsys.readouterr().out
+    assert "MANQUE : REQ_TOKEN" in sortie
+    assert "RES_TOKEN" not in sortie
+
+
+def test_verifier_reserve_absente_est_une_information(faux, capsys):
+    ecrire(faux["registre"], REGISTRE_STATUTS)
+    faux["env"][:] = ["REQ_TOKEN"]
+    assert sec.main(["verifier"]) == 0
+    sortie = capsys.readouterr().out
+    assert "réserve non posée : RES_TOKEN" in sortie
+    assert "MANQUE" not in sortie
+
+
+def test_verifier_reserve_presente_conforme(faux, capsys):
+    ecrire(faux["registre"], REGISTRE_STATUTS)
+    faux["env"][:] = ["REQ_TOKEN", "RES_TOKEN"]
+    assert sec.main(["verifier"]) == 0
+    assert "réserve non posée" not in capsys.readouterr().out
+
+
+def test_poser_statut_par_defaut_et_reserve(faux):
+    ecrire(faux["registre"], REGISTRE_STATUTS)
+    sec.ajouter_registre("NEUF_A", "u")
+    sec.ajouter_registre("NEUF_B", "u", statut="reserve")
+    reg = sec.lire_registre()
+    assert reg["NEUF_A"]["statut"] == "requis" and reg["NEUF_B"]["statut"] == "reserve"
+    assert reg["REQ_TOKEN"]["statut"] == "requis"
+
+
+def test_ajout_dans_ancien_format_reste_lisible(faux):
+    sec.ajouter_registre("NEUF_C", "u")
+    assert sec.lire_registre()["NEUF_C"]["statut"] == "requis"
+    assert sec.lire_registre()["MON_TOKEN"]["usage"] == "essai"
