@@ -19,3 +19,6 @@ Redémarrer la session ensuite.
 - `rules/` : règles (DIGEST.md injecté au démarrage) · `agents/` (7 agents) · `skills/` (nouveau-projet, tache, livrer, recette-ecran, preuve-navigateur) · `gabarits/` : modèles copiés par `init`
 - `tests/` : `python -m pytest plugins/socle/tests`
 Audit manuel : `python hooks/scripts/garde_socle.py --complet [chemin]`.
+
+## Mettre à jour
+Toute modification du plugin impose un bump de `version` dans `plugin.json` ET `marketplace.json` (même valeur), sinon `claude plugin update` répond « already at the latest version » et le cache garde l'ancien code.
