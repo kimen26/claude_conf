@@ -33,7 +33,7 @@ sys.path.insert(0, str(HERE.parents[2] / "hooks" / "scripts"))
 import motifs_secrets as ms  # noqa: E402
 import poser_secrets as ps  # noqa: E402
 
-BUNDLE = r"C:\ProgramData\Netskope\stagent\data\netskope-complete-bundle.crt"
+BUNDLE = os.environ.get("NETSKOPE_BUNDLE") or r"C:\ProgramData\Netskope\stagent\data\netskope-complete-bundle.crt"
 NOM_VALIDE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 TAILLE_MAX = 5_000_000
 EXEMPLES = (".example", ".sample", ".template")

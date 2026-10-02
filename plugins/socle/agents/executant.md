@@ -46,7 +46,7 @@ mécanique : n'écris aucune logique neuve. Si la tâche en exige une, arrête-t
 - Aucun secret affiché ni écrit. Jamais de valeur sensible dans un fichier suivi.
 - **Un écran touché se regarde AVANT de rendre** : fais lancer `python outils/smoke.py` par
   `socle:photographe`, OUVRE toi-même chaque capture et corrige tant qu'un défaut se voit
-  (chevauchement, rognage, texte coupé). Joins chemins et mesures. `banc` reste le juge final.
+  (chevauchement, rognage, texte coupé). Joins les chemins des captures. `banc` reste le juge final.
 
 ## Avant de rendre (DoD), APRÈS ta dernière écriture
 1. `pytest -q` si `tests/` existe : la suite COMPLÈTE, 0 rouge, compte avant/après. Jamais

@@ -17,7 +17,9 @@ sous proxy poser `NODE_EXTRA_CA_CERTS`) et continuer à la main, sans bloquer :
 - numéro = max des `task-NNN` de `backlog/tasks/` et `backlog/completed/` plus 1, relu juste avant
   d'écrire (compteur partagé entre sessions) ;
 - statut = champ `status:` du frontmatter, édité directement ;
-- pas de `backlog board export` : tenir `backlog/board.md` à la main n'est pas demandé, ne pas l'inventer.
+- `backlog/board.md` : le garde S-50 l'exige dès qu'une tâche existe et le veut plus récent que les tâches.
+  Sans l'outil, le réécrire à la main après chaque changement de statut : un tableau `id · titre · statut`,
+  rien de plus (S-50 ne compare que les dates).
 `backlog init` est à lancer une fois par projet (le gabarit `gabarits/backlog/config.yml` du plugin
 fournit les statuts).
 
@@ -70,23 +72,22 @@ Le problème vu de l'utilisateur, pourquoi maintenant, ce qui est hors sujet.
 ## Implementation Notes
 (écrit par l'exécutant en rendant)
 
+## Recette
+(écrit par `banc` : par critère visuel, tenu, non tenu ou non prouvé, avec le chemin de la capture)
+
+## Relecture
+(écrit par `relecteur` : un constat par ligne, puis critère par critère, puis l'avis)
+
 ## Verdict
 (décision humaine : Valide ou Rejete, date, motif)
 ```
 
 ## Preuve exigée à chaque transition
 
-| Transition | Qui la pose | Preuve à voir avant de la poser |
-|---|---|---|
-| Todo → Ready | orchestrateur | `dependencies` toutes en `Livre`, critères vérifiables, périmètre rempli |
-| Ready → Dev | `executant` | `## Implementation Plan` écrit ET relu par l'orchestrateur (plan, élégance) |
-| Dev → Recette | `executant` | `python outils/portes.py` exit 0 prouvé par `greffier`, critères cochés avec preuve |
-| Recette → Relecture | `banc` | captures produites par `photographe` ET regardées (obligatoire si écran touché ; sinon saut documenté) |
-| Relecture → Valide | `relecteur` puis Yann | `## Relecture` sans BLOQUANT, orchestrateur a rejoué les portes, verdict humain écrit |
-| Valide → Livre | `/socle:livrer` | commit, déploiement, smoke verts |
-| tout → Rejete | orchestrateur | motif écrit dans `## Verdict` ; retour à `Dev` si reprise |
-
-Un temps échoue deux fois pour la même raison : on s'arrête et on replanifie (retour au plan).
+La table des transitions (propriétaire et preuve, `Rejete` compris) vit dans `rules/methode.md`,
+section « Statuts et transitions » : elle n'est pas recopiée ici. Avant de poser un statut, lire sa
+ligne et voir la preuve qu'elle exige. Une dépendance absente de `backlog/tasks/` se cherche dans
+`backlog/completed/` : elle y est `Livre`.
 
 ## Verdict
 
@@ -101,7 +102,10 @@ Après `/socle:livrer` (statut `Livre`) :
    (symptôme, cause, règle). Chaque arbitrage non évident : `D-NNN` dans `memory/DECISIONS.md`.
    Le numéro se prend en **relisant le fichier au moment d'écrire**.
 2. `memory/TODO.md` : lignes concernées en `[x]`.
-3. `backlog board export backlog/board.md --force`. La tâche est archivée par l'outil et n'est jamais réécrite ensuite.
+3. Déplacer le fichier de la tâche de `backlog/tasks/` vers `backlog/completed/` (déplacement simple :
+   `backlog task archive` et `backlog task complete` refusent le statut `Livre`, mesuré le 2026-10-02 avec
+   la CLI 1.53 : `complete` n'accepte que `Rejete`). Puis `backlog board export backlog/board.md --force`
+   (ou le `board.md` à la main, voir plus haut). La tâche n'est jamais réécrite ensuite.
 
 ## Conflits de périmètre
 

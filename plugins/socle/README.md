@@ -1,7 +1,13 @@
 # socle
 
-Plugin Claude Code de Yann Ponaire : gardes (PreToolUse), audit de conformité d'un projet,
-agents, skills et gabarits.
+Plugin Claude Code de Yann Ponaire : méthode de travail, gardes (PreToolUse), audit de conformité d'un projet,
+agents, skills, gabarits et règles machine. Marketplace `yann`, repo `kimen26/claude_conf`.
+
+## Prérequis
+- Windows 11, Claude Code (CLI ou extension VS Code).
+- Python 3.11+ (gardes, audit, `secrets.py`, `socle_projet.py`).
+- Node (garde `sql-guard.js`).
+- Optionnels : `npm i -g backlog.md` (Backlog.md, tâches), Playwright Python (preuves d'écran), `uv` (isoler `snow`).
 
 ## Installer
     claude plugin marketplace add kimen26/claude_conf
@@ -10,22 +16,30 @@ agents, skills et gabarits.
 ## Mettre à jour
     claude plugin marketplace update yann
     claude plugin update socle@yann
-Redémarrer la session ensuite.
+Redémarrer la session ensuite (le hook de démarrage recopie `lib/` et les règles machine).
+
+## Parcours
+- **Projet neuf** : `/socle:nouveau-projet init` crée CLAUDE.md court, quintette `memory/`, backlog, `outils/{portes,smoke,deployer}.py`, `.env.example`.
+- **Projet existant** : `/socle:nouveau-projet remise-au-pas` fait d'abord une simulation qui ne modifie rien ; après accord, relancer avec `--oui`. `--radical` pour une remise à plat.
+- **Une tâche** : `/socle:tache` crée la tâche (numéro pris par l'outil) et la fait avancer dans la marche en 10 temps (reconnaissance, plan, élégance, exécution, DoD, recette, relecture, verdict, mise en service, capitalisation ; détail dans `rules/methode.md`), puis `/socle:livrer <numéros>` commite par chemins listés, pousse, déploie, passe en Livre.
+- **Secrets** : `/socle:secrets` (`inventaire`, `verifier`, `poser`, `ssl`, `purger`, `snow`). Un secret est une variable utilisateur ; aucune commande ne lit ni n'affiche une valeur.
+- **Les 20 contrôles** : `garde_socle.py` audite un projet (secrets, `.mcp.json`, CLAUDE.md, memory/, backlog, portes, venv, BOM, règles machine). Liste et ordre de traitement dans `skills/nouveau-projet/SKILL.md`. Audit manuel : `python hooks/scripts/garde_socle.py --complet [chemin]`.
+- **Règles machine** : livrées par le plugin dans `rules/machine/` (contradicteur, conception, memoire-projet, interaction-style) et copiées vers `~/.claude/rules/` à chaque démarrage si absentes ou différentes. Aucune suppression : un fichier en plus côté machine est conservé. La garde S-72 compare `~/.claude/rules/` à cette source.
+- **HO** : tâche machine hors projet, un fichier de `%LOCALAPPDATA%\socle\taches\`, hors Backlog (vocabulaire dans `rules/methode.md`).
 
 ## Structure
 - `.claude-plugin/plugin.json` : manifeste
 - `hooks/hooks.json` : câblage ; `hooks/scripts/` : session_start, garde_socle, garde_outils, gardes rapatriées
 - `lib/` : bibliothèques partagées, synchronisées vers `${CLAUDE_PLUGIN_DATA}/lib/` au démarrage
-- `rules/` : règles (DIGEST.md injecté au démarrage) · `agents/` (7 agents) · `skills/` (nouveau-projet, tache, livrer, recette-ecran, preuve-navigateur, secrets) · `gabarits/` : modèles copiés par `init`
+- `rules/` : DIGEST.md (injecté au démarrage), méthode, doctrines ; `rules/machine/` : règles copiées vers `~/.claude/rules/`
+- `agents/` (7) · `skills/` (nouveau-projet, tache, livrer, recette-ecran, preuve-navigateur, secrets) · `gabarits/` : modèles copiés par `init`
 - `tests/` : `python -m pytest plugins/socle/tests`
-Audit manuel : `python hooks/scripts/garde_socle.py --complet [chemin]`.
 
 ## Versionner
 Toute modification du plugin impose un bump de `version` dans `plugin.json` ET `marketplace.json` (même valeur), sinon `claude plugin update` répond « already at the latest version » et le cache garde l'ancien code.
 
 ## Secrets
-- Un secret est une variable d'environnement utilisateur. Voies, dans cet ordre : (1) écrire `NOM=valeur` dans `%LOCALAPPDATA%\socle\a_poser.env` (ouvert par `notepad "$env:LOCALAPPDATA\socle\a_poser.env"`), posé à la session suivante ou par `secrets.py poser --fichier` ; (2) l'écran Windows des variables utilisateur (`rundll32 sysdm.cpl,EditEnvironmentVariables`). `poser NOM` au clavier = seulement depuis un vrai terminal, jamais depuis le chat (Claude n'a pas de clavier). Le nom est au registre `rules/secrets-registre.md` (statut `requis` ou `reserve`).
-- Jamais dans `settings.json`, `.claude.json`, un `.bak` ou un `secrets.ps1` : les gardes S-30 à S-37 et `garde_outils` le refusent.
+- Voies, dans cet ordre : (1) écrire `NOM=valeur` dans `%LOCALAPPDATA%\socle\a_poser.env` (`notepad "$env:LOCALAPPDATA\socle\a_poser.env"`), posé à la session suivante ou par `secrets.py poser --fichier` ; (2) l'écran Windows des variables (`rundll32 sysdm.cpl,EditEnvironmentVariables`). `poser NOM` au clavier : vrai terminal seulement, jamais depuis le chat. Le nom figure au registre `rules/secrets-registre.md`.
+- Jamais dans `settings.json`, `.claude.json`, un `.bak` ou un `secrets.ps1` : les gardes S-30 à S-37 et `garde_outils` refusent.
 - Projet : `.env` git-ignoré + `.env.example` versionné. MCP : `${NOM}` dans `.mcp.json`. Snowflake : SSO `connections.toml` seul.
-- Commandes : `inventaire`, `verifier`, `poser` (`--fichier`), `ssl`, `purger`, `snow`. Doctrine complète : `rules/secrets.md`. Emplacements (`C:/tmp` interdit) : `rules/emplacements.md`.
-- Aucune commande ne lit ni n'affiche une valeur ; `purger` déplace dans `~/.claude/_a_supprimer/`, ne supprime jamais.
+- `purger` déplace dans `~/.claude/_a_supprimer/`, ne supprime jamais. Doctrine : `rules/secrets.md` ; emplacements : `rules/emplacements.md`.

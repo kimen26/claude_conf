@@ -1,6 +1,6 @@
 ---
 name: preuve-navigateur
-description: À utiliser pour toute preuve d'écran (capture, vidéo, PDF, recette, smoke) dans n'importe quel projet, y compris une app Streamlit dans Snowsight.
+description: "Outillage Playwright de preuve d'écran : bibliothèque `preuve_navigateur`, shim, profil SSO partagé, API et CLI (setup, recette, capture, pdf). À utiliser pour écrire ou dépanner du code de capture, vidéo ou PDF, y compris une app Streamlit dans Snowsight. Pour lancer une recette et regarder les captures, voir /socle:recette-ecran."
 ---
 
 # Preuve navigateur
@@ -26,7 +26,10 @@ La lib vit dans `~/.claude/plugins/data/socle/lib/` (recopiée par le hook Sessi
 
 ```python
 import sys; from pathlib import Path
-sys.path.insert(0, str(Path.home()/".claude/plugins/data/socle/lib")); from preuve_navigateur import *
+sys.path.insert(0, str(Path.home()/".claude/plugins/data/socle/lib"))
+from preuve_navigateur import *  # noqa: F401,F403
+if __name__ == "__main__":
+    sys.exit(main())
 ```
 
 ## API

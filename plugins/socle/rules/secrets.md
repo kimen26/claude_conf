@@ -48,5 +48,5 @@ signale si elle existe. Pour `requests` : `verify=os.environ["NETSKOPE_BUNDLE"]`
 S-30 `.env` suivi, `secrets*.ps1` non ignoré, `.env` sans `.env.example`, secret dans un fichier suivi ·
 S-31 `env` en clair dans `.claude/settings*.json` · S-32 auth Snowflake hors `connections.toml` ·
 S-33 `.mcp.json` en clair, ou `snowflake-labs-mcp` sans keyring · S-34 connexion non SSO / sans cache ·
-S-35 `snow` hors `~/.local/bin` · S-37 `a_poser.env` avec une ligne `NOM=valeur` non posée, ou posée mais fichier non vidé. `garde_outils` refuse d'écrire un secret dans un fichier Claude
+S-35 `snow` hors `~/.local/bin` · S-36 référence à `C:/tmp` (voir `emplacements.md`) · S-37 `a_poser.env` avec une ligne `NOM=valeur` non posée, ou posée mais fichier non vidé. `garde_outils` refuse d'écrire un secret dans un fichier Claude
 (`settings*.json`, `.claude.json`, `*.bak*`, `secrets*.ps1`, `backups/`) et de copier `settings.json` en `.bak`.

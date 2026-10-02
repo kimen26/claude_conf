@@ -1,6 +1,6 @@
 # Registre des secrets (noms seulement)
 
-Jamais de valeur ici. Tenu par `/socle:secrets poser NOM` ; contrôlé par `/socle:secrets verifier`.
+Jamais de valeur ici. Tenu par `/socle:secrets poser --fichier` (voie `a_poser.env`) ; contrôlé par `/socle:secrets verifier`.
 "à confirmer" = posée avant le registre, date inconnue.
 statut : `requis` = doit être posée (absente = MANQUE, exit 1) ; `reserve` = pas utilisée pour le moment, à poser
 quand un projet en a besoin (absente = simple information). Une ligne sans colonne statut vaut `requis`.

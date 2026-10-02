@@ -1,7 +1,8 @@
 # lib/ : bibliothèques partagées du plugin socle
 
 Contenu : `preuve_navigateur.py`, la bibliothèque de preuve d'écran (captures, vidéo, PDF,
-profil SSO partagé `%LOCALAPPDATA%\socle\pw-profile`, sondes de débordement). Elle s'appuie sur
+profil SSO partagé `%LOCALAPPDATA%\socle\pw-profile`, recette multi-viewports : erreurs console, HTTP,
+exceptions Streamlit). Elle ne mesure rien : aucune sonde de débordement. Elle s'appuie sur
 Playwright, installé dans le venv du projet.
 
 Chemin stable : à chaque SessionStart, `session_start.py` copie `lib/` vers
@@ -9,6 +10,6 @@ Chemin stable : à chaque SessionStart, `session_start.py` copie `lib/` vers
 quand le plugin se met à jour, contrairement au cache versionné du plugin.
 
 Import côté projet : le shim `outils/preuve_navigateur.py` (écrit par `/socle:nouveau-projet init`)
-ajoute ce dossier au `sys.path`, puis fait `from preuve_navigateur import *` et, lancé en script, appelle `main()` (`python outils/preuve_navigateur.py setup|recette|migrer-profil`).
+ajoute ce dossier au `sys.path`, puis fait `from preuve_navigateur import *` et, lancé en script, appelle `main()` (`python outils/preuve_navigateur.py setup|recette|capture|pdf|verrou|migrer-profil`).
 Les scripts du projet importent donc `preuve_navigateur` sans connaître le plugin.
 Ne jamais ouvrir Playwright à la main : le garde `garde_outils` l'interdit.

@@ -5,10 +5,12 @@ Ne doit jamais échouer : tout est dans try/except, exit 0 toujours.
 La sortie standard est ajoutée au contexte de la session.
 """
 import hashlib
+import json
 import os
 import shutil
 import sys
 
+AUDIT_NON_ADOPTE = {f"S-{n}" for n in range(30, 38)} | {"S-73"}
 BUNDLE = r"C:\ProgramData\Netskope\stagent\data\netskope-complete-bundle.crt"
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -18,6 +20,9 @@ def racine_plugin():
 
 
 def controle_ssl():
+    """Netskope absent (ni variable NETSKOPE_BUNDLE ni bundle sur disque) : aucune alerte, machine hors proxy."""
+    if not os.environ.get("NETSKOPE_BUNDLE") and not os.path.isfile(BUNDLE):
+        return []
     manque = [v for v in ("NODE_EXTRA_CA_CERTS", "SSL_CERT_FILE")
               if not os.environ.get(v) or not os.path.exists(os.environ[v])]
     out = []
@@ -97,11 +102,65 @@ def sync_lib():
     return [f"SOCLE : lib/ synchronisée ({n} fichier(s) copié(s))"] if n else []
 
 
+def sync_regles():
+    """Copie rules/machine/*.md vers ~/.claude/rules/ si absent ou différent (fins de ligne en LF). Jamais de suppression."""
+    src = os.path.join(racine_plugin(), "rules", "machine")
+    if not os.path.isdir(src):
+        return []
+    dst = os.path.join(os.path.expanduser("~"), ".claude", "rules")
+    copiees = []
+    for nom in sorted(os.listdir(src)):
+        if not nom.endswith(".md"):
+            continue
+        with open(os.path.join(src, nom), "rb") as f:
+            ref = f.read().replace(b"\r\n", b"\n")
+        cible = os.path.join(dst, nom)
+        try:
+            with open(cible, "rb") as f:
+                if f.read().replace(b"\r\n", b"\n") == ref:
+                    continue
+        except OSError:
+            pass
+        os.makedirs(dst, exist_ok=True)
+        with open(cible, "wb") as f:
+            f.write(ref)
+        copiees.append(nom)
+    return [f"SOCLE : règles machine copiées vers ~/.claude/rules ({', '.join(copiees)})"] if copiees else []
+
+
+def projet_courant():
+    return os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+
+
+def projet_adopte(projet=None):
+    """Adopté = outils/portes.py, ou backlog/, ou un CLAUDE.md qui mentionne « socle »."""
+    projet = projet or projet_courant()
+    if os.path.isfile(os.path.join(projet, "outils", "portes.py")) or os.path.isdir(os.path.join(projet, "backlog")):
+        return True
+    try:
+        with open(os.path.join(projet, "CLAUDE.md"), encoding="utf-8", errors="replace") as f:
+            return "socle" in f.read().lower()
+    except OSError:
+        return False
+
+
+def version_plugin():
+    try:
+        with open(os.path.join(racine_plugin(), ".claude-plugin", "plugin.json"), encoding="utf-8") as f:
+            return json.load(f).get("version") or "?"
+    except Exception:
+        return "?"
+
+
 def digest():
+    """DIGEST complet (${CLAUDE_PLUGIN_ROOT} substitué) si le projet a adopté le socle, sinon une ligne."""
+    if not projet_adopte():
+        return [f"# Socle v{version_plugin()} actif (gardes) ; projet non adopté : "
+                "/socle:nouveau-projet init | remise-au-pas"]
     p = os.path.join(racine_plugin(), "rules", "DIGEST.md")
     if os.path.isfile(p):
         with open(p, encoding="utf-8") as f:
-            return [f.read().rstrip()]
+            return [f.read().rstrip().replace("${CLAUDE_PLUGIN_ROOT}", racine_plugin().replace("\\", "/"))]
     return []
 
 
@@ -128,14 +187,16 @@ def depot_secrets():
 def audit():
     sys.path.insert(0, HERE)
     import garde_socle
-    projet = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
-    lignes, _ = garde_socle.main(["--session", projet])
-    return lignes
+    projet = os.path.abspath(projet_courant())
+    ecarts = garde_socle.auditer(projet, complet=False)
+    if not projet_adopte(projet):  # non adopté : secrets/auth (S-30 à S-37) et BOM (S-73) seulement
+        ecarts = [e for e in ecarts if e.code in AUDIT_NON_ADOPTE]
+    return garde_socle.rendu_session(ecarts)
 
 
 def main():
     sortie = []
-    for fn in (controle_ssl, depot_secrets, controle_emplacements, sync_lib, digest, audit):
+    for fn in (controle_ssl, depot_secrets, controle_emplacements, sync_lib, sync_regles, digest, audit):
         try:
             sortie += fn() or []
         except Exception:

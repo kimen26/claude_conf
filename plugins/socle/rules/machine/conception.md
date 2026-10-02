@@ -18,7 +18,8 @@ elle doit dire vrai en permanence.
    accès données (seul endroit qui parle à Snowflake, cache ici). Streamlit : règle R23 du skill
    `rex-manage-streamlit` (`streamlit_app.py` = navigation, `vues/`, `core/`).
 5. **Partager entre projets par un seul canal versionné**, jamais par copier-coller d'un projet à
-   l'autre : plugin `socle` (Claude Code), stage `CORTEX_SKILLS` (Cortex Code), `IMPORTS` de stage
-   (SiS runtime warehouse). Une copie locale d'un skill porte sa version et se met à jour.
+   l'autre : plugin `socle` (Claude Code), stage de skills d'équipe (Cortex Code), `IMPORTS` de stage
+   (SiS runtime warehouse). Une copie locale d'un skill garde sa version visible ; la remonter est une
+   tâche, pas un réflexe silencieux.
 6. **Refactor opportuniste interdit, signalé** : une duplication vue hors du périmètre de la tâche
    va en `## Parking` de `memory/TODO.md`, pas dans le diff.

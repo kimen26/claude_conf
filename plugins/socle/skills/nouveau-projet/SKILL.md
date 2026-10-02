@@ -36,12 +36,22 @@ python socle_projet.py remise-au-pas [chemin] [--radical]        # simulation, n
 python socle_projet.py remise-au-pas [chemin] [--radical] --oui  # applique, après accord de Yann
 ```
 
-Lance d'abord `secrets.py inventaire <projet>` (skill `/socle:secrets`, noms seulement), puis `garde_socle.py --complet` (via `--json`), et traite les écarts dans l'ordre **S-30 à S-35** (secrets, accès Snowflake, snow isolé) → **S-10** (.mcp.json) → **S-20** (navigateur hors socle) → **S-01/02/03** (CLAUDE.md, memory/, .gitignore) → **S-50/60** (backlog, portes) → **S-40** (doublons plugin, settings mort) → **S-70** (venv non relocalisé) et **S-71** (`.py` sans `requirements*.txt` ni `pyproject.toml`, hors `outils/`) : ces deux-là ne sortent qu'en `--complet`/`--json`, pas en `--session` → **S-73** (BOM UTF-8 dans un JSON lu par Node : réécrire sans BOM) et **S-72** (règle machine de `claude_conf/rules/` absente ou dérivée dans `~/.claude/rules/` : à copier à la main, hors projet).
+Lance d'abord `secrets.py inventaire <projet>` (skill `/socle:secrets`, noms seulement), puis `garde_socle.py --complet` (via `--json`), et traite les écarts dans l'ordre **S-30 à S-37** (secrets, accès Snowflake, snow isolé, `C:/tmp`, `a_poser.env`) → **S-10** (.mcp.json) → **S-20** (navigateur hors socle) → **S-01/02/03** (CLAUDE.md, memory/, .gitignore) → **S-50/60** (backlog, portes) → **S-40** (doublons plugin, settings mort) → **S-70** (venv non relocalisé) et **S-71** (`.py` sans `requirements*.txt` ni `pyproject.toml`, hors `outils/`) : ces deux-là ne sortent qu'en `--complet`/`--json`, pas en `--session` → **S-73** (BOM UTF-8 dans un JSON lu par Node : réécrire sans BOM) et **S-72** (règle machine de `rules/machine/` du plugin absente ou dérivée dans `~/.claude/rules/` : recopiée au prochain démarrage de session, hors projet).
 
 - **Chaque geste est confirmé par Yann** : présenter le plan de la simulation, attendre l'accord, relancer avec `--oui`. Jamais supprimer sans confirmation explicite.
 - Le script complète ce qui manque (sans écraser) ; secrets, `.mcp.json` et le reste sont signalés « à traiter à la main » avec le correctif du garde.
 - **`--radical`** : tout ce que S-40 et S-20 signalent est **déplacé, jamais supprimé**, dans `_a_supprimer/<AAAA-MM-JJ>/` en conservant l'arborescence relative, avec un `MANIFESTE.md` (fichier, raison, remplacé par quoi dans le plugin). Yann supprime le dossier lui-même.
 - Un déplacement isolé : `python socle_projet.py deplacer <fichiers...> --raison "..." [--remplace-par "..."]`.
+
+## Les 20 contrôles (`garde_socle.py`)
+
+- **S-01** CLAUDE.md absent ou trop long · **S-02** quintette `memory/` incomplet · **S-03** `.gitignore` sans motifs requis
+- **S-10** `.mcp.json` avec npx latest · **S-20** Playwright hors `preuve_navigateur`
+- **S-30** `.env` suivi, secret en clair · **S-31** `env` en clair dans settings · **S-32** Snowflake hors `connections.toml`
+- **S-33** `.mcp.json` en clair, sans keyring · **S-34** connexion Snowflake non SSO · **S-35** `snow` hors `~/.local/bin`
+- **S-36** référence à `C:/tmp` · **S-37** `a_poser.env` non traité
+- **S-40** doublon du plugin, `mcpServers` mort · **S-50** backlog absent ou board périmé · **S-60** `outils/` portes, smoke, deployer absents
+- **S-70** venv non relocalisé · **S-71** `.py` sans requirements · **S-72** règle machine absente ou dérivée · **S-73** BOM UTF-8 dans un JSON
 
 ## Mode `venv` (recréer, jamais copier)
 

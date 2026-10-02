@@ -47,6 +47,14 @@ s'il doit affiner. Hors sujet : pagination, tri, export.
 
 (rempli par l'exécutant en rendant : fichiers touchés avec +x -y, écarts assumés, preuves)
 
+## Recette
+
+(rempli par `banc` : par critère visuel, tenu, non tenu ou non prouvé, avec le chemin de la capture)
+
+## Relecture
+
+(rempli par `relecteur` : un constat par ligne, puis critère par critère, puis l'avis)
+
 ## Verdict
 
 (rempli après la relecture : `AAAA-MM-JJ · Valide | Rejete · motif`)

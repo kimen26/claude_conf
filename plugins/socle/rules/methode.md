@@ -5,11 +5,12 @@ en permanence.
 
 ## Vocabulaire (un mot, un sens)
 
-- **Tâche** : un fichier Backlog.md `backlog/tasks/task-NNN - titre.md`. Ni « HO », ni « brief ».
+- **Tâche** : un fichier Backlog.md du projet, `backlog/tasks/task-NNN - titre.md`.
+- **HO** : une tâche machine hors projet, un fichier de `%LOCALAPPDATA%\socle\taches\`, hors Backlog.
 - **Porte** : contrôle mécanique vert ou rouge (`python outils/portes.py`, exit 0 ou 1).
 - **Preuve** : artefact regardé (capture, log, diff). Un exit 0 n'est pas une preuve de rendu.
 - **Verdict** : décision humaine, Valide ou Rejete, avec motif écrit.
-- **Lane** : verrou de périmètre de fichiers. Un seul dev par lane.
+- **Lane** : verrou de périmètre de fichiers, un couloir d'exécution où un seul dev travaille à la fois.
 - **Officiers** (Sonnet) jugent : `eclaireur`, `executant`, `banc`, `relecteur`.
 - **Soldats** (Haiku) n'inventent rien, ne jugent pas : `fouilleur`, `greffier`, `photographe`.
 
@@ -38,10 +39,13 @@ Un temps échoue deux fois pour la même raison : on arrête et on replanifie (r
 | Todo → Ready | orchestrateur | dépendances `Livre`, critères vérifiables |
 | Ready → Dev | `executant` | `Implementation Plan` écrit et relu |
 | Dev → Recette | `executant` | portes vertes prouvées par `greffier`, DoD cochée |
-| Recette → Relecture | `banc` | captures produites par `photographe` ET regardées |
-| Relecture → Valide | `relecteur` + Yann | relecture sans BLOQUANT, portes rejouées, verdict écrit |
-| Valide → Livre | `/socle:livrer` | commit, déploiement, smoke verts |
-| clôture | orchestrateur | L/D versées, CHANGELOG, tâche archivée par l'outil, jamais réécrite |
+| Recette → Relecture | `banc` | captures produites par `photographe` ET regardées (obligatoire si un écran est touché ; sinon saut documenté) |
+| Relecture → Valide | `relecteur` + Yann | `## Relecture` sans BLOQUANT, portes rejouées par l'orchestrateur, verdict écrit |
+| Valide → Livre | `/socle:livrer` | commit, déploiement, smoke verts, ligne de CHANGELOG |
+| tout → Rejete | orchestrateur | motif écrit dans `## Verdict` ; retour à `Dev` si reprise |
+| clôture | orchestrateur | L/D versées, TODO à jour, fichier de la tâche déplacé de `backlog/tasks/` vers `backlog/completed/` (voir `/socle:tache`, section Clôturer), jamais réécrit |
+
+C'est la seule table des transitions : `/socle:tache` y renvoie, il ne la recopie pas.
 
 ## Règles qui tiennent l'ensemble
 
@@ -62,6 +66,7 @@ Un temps échoue deux fois pour la même raison : on arrête et on replanifie (r
   son rapport est un fait brut, vérifié avant usage ; il ne lance personne.
 - **Convention plutôt que config** : trois commandes de projet, `python outils/portes.py`,
   `python outils/smoke.py`, `python outils/deployer.py`, plus `pytest` s'il y a `tests/`.
+- **Outils de la machine** (navigateur, MCP, consoles) : doctrine dans `rules/outils-machine.md`.
 - **Vérifier avant « fait »** : jamais de tâche finie sans preuve ; un livrable visuel s'ouvre.
 - **Une correction humaine non gravée sera refaite** : la leçon est versée avant de clore.
 - **Git** : commits par chemins listés, jamais `add -A`, `add .`, `commit -a`, et seulement le

@@ -20,7 +20,7 @@ Doctrine complète : `${CLAUDE_PLUGIN_ROOT}/rules/secrets.md`.
 6. Un CLI s'installe **isolé** : `uv tool install <outil> --native-tls`. Snowflake : `uv tool install snowflake-cli --native-tls --with "snowflake-connector-python[secure-local-storage]"`. Le MCP Snowflake : `uvx --with "snowflake-connector-python[secure-local-storage]" snowflake-labs-mcp`.
 7. SSL : `ssl` pose `NODE_EXTRA_CA_CERTS`, `SSL_CERT_FILE`, `NETSKOPE_BUNDLE`, `UV_NATIVE_TLS` et pip.ini. **Jamais `REQUESTS_CA_BUNDLE`** : elle casse `snow` (mesuré 2026-10-01).
 8. Git : Credential Manager pour push/pull ; `GITLAB_PAT` en env user pour l'API seulement.
-9. Tourner un secret = le révoquer côté service, puis `poser NOM` à nouveau.
+9. Tourner un secret = le révoquer côté service, puis écrire la nouvelle valeur dans `a_poser.env` (voie 1).
 
 ## Les commandes
 `python ${CLAUDE_PLUGIN_ROOT}/skills/secrets/scripts/secrets.py <commande>`
@@ -36,7 +36,7 @@ Doctrine complète : `${CLAUDE_PLUGIN_ROOT}/rules/secrets.md`.
 | `snow` | `snow` isolé (`~/.local/bin`), `keyring` présent, cache SSO (fichier). Imprime la commande d'installation sinon, n'installe rien |
 
 ## Traiter les états
-`a_deplacer` : poser la valeur par `poser NOM` (Yann la saisit), remplacer par `${NOM}`, révoquer l'ancienne si elle a fuité. `doublon` : garder la variable user, retirer l'autre. `hors_registre` : inscrire ou supprimer. `config_morte` : `mcpServers` dans `settings.json` est ignoré, déplacer vers `.mcp.json`. Ne jamais ouvrir ni afficher un fichier de secret pour « vérifier ».
+`a_deplacer` : poser la valeur par `a_poser.env` (Yann y écrit `NOM=valeur`), remplacer par `${NOM}`, révoquer l'ancienne si elle a fuité. `doublon` : garder la variable user, retirer l'autre. `hors_registre` : inscrire ou supprimer. `config_morte` : `mcpServers` dans `settings.json` est ignoré, déplacer vers `.mcp.json`. Ne jamais ouvrir ni afficher un fichier de secret pour « vérifier ».
 
 ## Emplacements (hors secrets, même skill)
 `C:/tmp` est interdit (`rules/emplacements.md`). `python ${CLAUDE_PLUGIN_ROOT}/skills/secrets/scripts/emplacements.py purger` liste `C:/tmp/claude` (taille, date, verdict), propose `migrer-profil` pour le profil navigateur et imprime ce que Yann peut supprimer lui-même. Ne supprime ni ne déplace jamais rien. Le profil navigateur et les caches ne sont pas des secrets : rien au registre.

@@ -168,6 +168,7 @@ def test_session_start(tmp_path):
     try:
         (data / "lib").mkdir(parents=True)
         (data / "lib" / "orphelin.txt").write_text("a supprimer\n")
+        (proj / "backlog").mkdir()  # projet adopté : le DIGEST complet est injecté
         r = lancer("session_start.py", env=env)
         assert r.returncode == 0
         assert (data / "lib" / "README.md").read_text() == (lib / "README.md").read_text()

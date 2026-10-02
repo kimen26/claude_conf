@@ -9,6 +9,7 @@
 ## Marketplaces
 
 ```
+claude plugin marketplace add kimen26/claude_conf                  # marketplace yann (plugin socle)
 claude plugin marketplace add anthropics/claude-plugins-official   # (souvent déjà présente)
 claude plugin marketplace add JuliusBrussee/caveman
 ```
@@ -16,6 +17,7 @@ claude plugin marketplace add JuliusBrussee/caveman
 ## Installation
 
 ```
+claude plugin install socle@yann                                   # méthode, gardes, agents, /socle:*, règles machine (repo claude_conf)
 claude plugin install caveman@caveman                              # économie tokens (sorties, cavecrew, compress)
 claude plugin install skill-creator@claude-plugins-official        # créer/tester des skills
 claude plugin install hookify@claude-plugins-official              # créer des hooks depuis la conversation

@@ -12,7 +12,7 @@ réflexion : on se demande à quelle question la chose répond, et le fichier to
 | `memory/TODO.md` | **quoi ensuite** | ouverture / fermeture de chantier | aucune |
 | `memory/LESSONS.md` | **quelle erreur ne pas refaire** | après CHAQUE correction humaine, chaque piège payé | `L-NNN` |
 | `memory/MEMORY.md` | **où on en est** | fin de session, fin de chantier | aucune |
-| `memory/CHANGELOG.md` | **ce qui est sorti** | à la release, en vidant les lanes terminées | `vX.Y` |
+| `memory/CHANGELOG.md` | **ce qui est sorti** | à chaque livraison, une ligne ; à la release, regroupé sous `vX.Y` | `vX.Y` |
 
 Le socle stable (vision produit, profil utilisateur, contexte métier) vit aussi dans `memory/`
 mais hors de ce quintette : il ne se met pas à jour au fil de l'eau, il se réécrit rarement.
@@ -39,26 +39,26 @@ réalité d'aujourd'hui, c'est réécrire l'histoire du projet et perdre l'infor
 utile : ce qu'on croyait à ce moment-là. Seuls les documents **normatifs** (ceux qui prescrivent)
 doivent dire vrai en permanence.
 
-**Les briefs de chantier ne sont pas de la mémoire.** Un brief est jetable : il décrit un
-travail à faire, il meurt une fois fait. Il vit dans `docs/`, et descend dans un
-`archives/` une fois terminé. Sinon les briefs morts noient l'état courant : le dossier de
-travail doit se lire d'un coup d'œil et ne montrer que les chantiers vivants.
+**Les tâches ne sont pas de la mémoire.** Une tâche est jetable : elle décrit un travail à
+faire, elle meurt une fois fait. Elle vit dans `backlog/tasks/`, et descend dans
+`backlog/completed/` une fois livrée. Sinon les tâches mortes noient l'état courant : le dossier
+de travail doit se lire d'un coup d'œil et ne montrer que les chantiers vivants.
 
-**Lane ≠ epic.** Une *lane* est un couloir d'exécution : un verrou anti-collision quand
-plusieurs sessions travaillent en parallèle. Un *epic* est un résultat métier qui se découpe.
-Un chantier de 3+ briefs avec un critère de fin métier mérite d'être annoncé comme tel, ses
-briefs listés dessous. En dessous de 3, une lane suffit, sinon on réinvente Jira en markdown.
+**Lane ≠ epic.** Lane : verrou de périmètre de fichiers, un couloir d'exécution où un seul dev
+travaille à la fois. Un *epic* est un résultat métier qui se découpe.
+Un chantier de 3+ tâches avec un critère de fin métier mérite d'être annoncé comme tel, ses
+tâches listées dessous. En dessous de 3, une lane suffit, sinon on réinvente Jira en markdown.
 
-**Le CHANGELOG est un exutoire, pas un journal.** On n'y écrit pas en continu : on y vide
-`TODO.md` au moment d'une release, en capacités livrées. Une ligne = ce que l'utilisateur voit
-de plus, écrit de son point de vue (« les photos partent dans la bonne fiche », pas « refactor
-du module de ciblage »).
+**Le CHANGELOG n'est pas un journal de commits.** `/socle:livrer` y ajoute une ligne par
+livraison ; la release les regroupe sous `vX.Y`, en capacités livrées. Une ligne = ce que
+l'utilisateur voit de plus, écrit de son point de vue (« les photos partent dans la bonne
+fiche », pas « refactor du module de ciblage »).
 
 ## Ce qui ne va PAS dans la mémoire
 
 - Ce que le code dit déjà (structure, signatures, dépendances) : ça se relit.
 - Ce que git dit déjà (qui, quand, quel diff) : l'historique est là pour ça.
-- Le détail d'exécution d'un chantier : il vit dans son brief, et meurt avec lui.
+- Le détail d'exécution d'un chantier : il vit dans sa tâche, et meurt avec elle.
 - Ce qui n'a d'intérêt que dans la conversation en cours.
 
 En cas de doute : si la chose sera **fausse dans trois mois**, elle n'a rien à faire dans une

@@ -32,7 +32,7 @@ le prouves. Réponds en français.
    - complexité gratuite : une voie nettement plus simple qui tenait la même description.
 
 ## Rendu
-Écris ton rendu dans la section `## Relecture` de la tâche (la seule que tu modifies), puis
+Écris ton rendu dans la section `## Relecture` de la tâche (la seule que tu modifies : `Edit` ne sert qu'à cela), puis
 rends-le aussi dans ta réponse. Une ligne par constat, du plus grave au moins grave :
 `chemin:ligne · BLOQUANT | MAJEUR | MINEUR · le défaut · le scénario concret qui le déclenche`
 Puis, critère par critère : **tenu** (preuve rejouée), **non tenu** (pourquoi), **non prouvé**.

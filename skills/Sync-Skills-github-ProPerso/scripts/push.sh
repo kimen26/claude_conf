@@ -15,6 +15,7 @@ PRIVATE_SKILLS=(
   "relecteur-fiches"
   "snowflake-snow-cli"
   "qwen3-tts"
+  "impact"
 )
 
 if [ $# -lt 1 ]; then

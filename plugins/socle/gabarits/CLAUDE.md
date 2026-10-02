@@ -16,7 +16,7 @@ mémoire en quintette `memory/`. Ne rien en recopier ici. Voir `${CLAUDE_PLUGIN_
 
 Les trois commandes conventionnelles du projet (à implémenter dans `outils/`) :
 - `python outils/portes.py` : toutes les portes mécaniques, exit 0 ou 1
-- `python outils/smoke.py` : preuve d'écran (captures + `mesures.json`)
+- `python outils/smoke.py` : preuve d'écran (captures PNG dans `recette/<date>/`)
 - `python outils/deployer.py` : mise en service de HEAD
 
 ## Routage : le projet touche à… alors…

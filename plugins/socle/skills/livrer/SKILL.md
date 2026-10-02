@@ -24,7 +24,7 @@ Lire `## Périmètre` : c'est la liste blanche du commit. Puis `python outils/po
 exigé**. Rouge : refuser de livrer, rapporter la fin de sortie, ne rien committer.
 
 ## 2. Commit par chemins
-- `git status` et recherche de fichiers de conflit de synchronisation (`*-PC*`) : s'il y en a, stop.
+- `git status` : aucun fichier de conflit de synchronisation (copie de conflit, suffixe de nom de machine) ; s'il y en a, stop.
 - Fichiers du commit = **périmètre de la tâche ∩ `git status`**, ajoutés un par un (`git add <chemin>`).
   Tout fichier modifié hors périmètre reste dehors et se signale. Un doute : `git diff <fichier>`,
   des lignes que la session n'a pas écrites ne se commitent pas.
@@ -44,15 +44,17 @@ python outils/smoke.py           # APRÈS le déploiement, via socle:photographe
 Un échec de connexion juste après le déploiement : le service redémarre, relancer **une** fois.
 Deuxième échec : stop. Les captures du smoke s'**ouvrent et se regardent** (voir
 `/socle:recette-ecran`), un exit 0 ne suffit pas. Ne jamais diffuser une URL interne de service.
-Squelette `outils/*.py` non implémenté (exit 1 « non implémenté ») : le dire, ne pas inventer.
+Squelette `outils/deployer.py` non implémenté (exit 1 « non implémenté ») : le dire, ne pas inventer. Un
+`outils/smoke.py` qui affiche « AUCUNE CAPTURE » n'a rien prouvé : le dire aussi.
 
 ## 5. Clôturer
 - Statut `Livre` : `backlog task edit task-NNN --status Livre` (ou le frontmatter à la main si
   l'outil est absent).
-- `memory/CHANGELOG.md` : une ligne en tête, **du point de vue de l'utilisateur** (ce qu'il voit de
-  plus : « les photos partent dans la bonne fiche », pas « refactor du module »), sans cadratin.
+- `memory/CHANGELOG.md` : **une ligne par livraison**, en tête, **du point de vue de l'utilisateur** (ce
+  qu'il voit de plus : « les photos partent dans la bonne fiche », pas « refactor du module »), sans
+  cadratin. La release regroupe ensuite ces lignes en capacités sous `vX.Y`.
 - `memory/TODO.md` : lignes concernées en `[x]`. Garder le style de fin de ligne (CRLF ou LF) du fichier.
-- Leçons et décisions : voir `/socle:tache` section Clôturer. `backlog board export backlog/board.md --force`.
+- Leçons, décisions, déplacement de la tâche vers `backlog/completed/` et board : voir `/socle:tache`, section Clôturer.
 - Commit de ces notes, par chemins, après le déploiement.
 
 ## 6. Rendre compte

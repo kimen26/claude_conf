@@ -312,10 +312,19 @@ LIBELLES_S20 = {
 }
 
 
+PLUGIN_AUTO_EXCLUS = re.compile(r"^plugins/[^/]+/(hooks/scripts|tests)/|^(plugins/[^/]+/)?skills/[^/]+/references/")
+
+
+def _auto_exclu(racine, rel):
+    """Dans un repo de plugin (.claude-plugin/marketplace.json), S-20/S-30/S-32 ignorent scripts, tests et références."""
+    return os.path.isfile(os.path.join(racine, ".claude-plugin", "marketplace.json")) \
+        and bool(PLUGIN_AUTO_EXCLUS.match(rel.replace("\\", "/")))
+
+
 def s_20(racine):
     out = []
     for rel, c in _constats(racine).items():
-        if _exclu(rel):
+        if _exclu(rel) or _auto_exclu(racine, rel):
             continue
         for ligne, kind in c["s20"]:
             out.append(Ecart("S-20", rel, ligne, *LIBELLES_S20[kind]))
@@ -344,7 +353,7 @@ def s_30(racine):
     if os.path.isfile(os.path.join(racine, ".env")) and not os.path.isfile(os.path.join(racine, ".env.example")):
         out.append(Ecart("S-30", ".env", 0, ".env présent sans .env.example", "créer .env.example (noms seuls, versionné)"))
     for rel, c in _constats(racine).items():
-        if rel in suivis:
+        if rel in suivis and not _auto_exclu(racine, rel):
             for ligne, motif in c["s30"]:
                 out.append(Ecart("S-30", rel, ligne, f"secret probable (motif {motif})", "retirer la valeur, la révoquer, la mettre dans .env"))
     return out
@@ -379,7 +388,7 @@ def s_32(racine):
     """Auth Snowflake hors connections.toml (mot de passe, clé privée, PAT)."""
     out = []
     for rel, c in sorted(_constats(racine).items()):
-        if _exclu(rel):
+        if _exclu(rel) or _auto_exclu(racine, rel):
             continue
         for ligne, nom in c.get("s32", []):
             out.append(Ecart("S-32", rel, ligne, f"{nom} : Snowflake = SSO connections.toml seul",
@@ -576,9 +585,9 @@ def _octets_lf(chemin):
 
 
 def s_72(racine):
-    """Niveau user : chaque règle du repo claude_conf/rules/ existe à l'identique dans ~/.claude/rules/."""
+    """Niveau user : chaque règle livrée par le plugin (rules/machine/) existe à l'identique dans ~/.claude/rules/."""
     home = os.path.expanduser("~")
-    src = os.path.join(home, ".claude", "skills-sync-workspace", "claude_conf", "rules")
+    src = os.path.join(plugin_root(), "rules", "machine")
     if not os.path.isdir(src):
         return []
     out = []
@@ -591,8 +600,8 @@ def s_72(racine):
         if actuel == ref:
             continue
         etat = "absente" if actuel is None else "dérive"
-        out.append(Ecart("S-72", f"~/.claude/rules/{nom}", 0, f"règle {nom} {etat} du repo claude_conf/rules",
-                         f"copier claude_conf/rules/{nom} vers ~/.claude/rules/ (ou reporter la copie machine dans le repo si elle est la plus récente)"))
+        out.append(Ecart("S-72", f"~/.claude/rules/{nom}", 0, f"règle {nom} {etat} de la source plugin rules/machine",
+                         "redémarrer la session (session_start recopie rules/machine vers ~/.claude/rules) ; si la copie machine est la plus récente, la reporter dans plugins/socle/rules/machine"))
     return out
 
 

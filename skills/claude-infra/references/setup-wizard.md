@@ -145,7 +145,7 @@ Actions :
    - `https://docs.anthropic.com/fr/docs/claude-code` → nouveautés CLI
    - `https://github.com/anthropics/claude-code/releases` → changelog
 3. **Scanner le GitLab skills-catalog** si disponible :
-   - `https://gitlab.infopro-digital.net/[skills-catalog]` (à configurer)
+   - `<gitlab-entreprise>/[skills-catalog]` (à configurer)
    - Lister les nouveaux skills d'équipe depuis la dernière session
 4. **Synthèse** : présenter les nouveautés en 3-5 points max
 

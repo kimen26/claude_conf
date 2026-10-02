@@ -1,4 +1,4 @@
-# Socle actif v2026.10.10
+# Socle actif v2026.10.11
 
 Méthode complète : ${CLAUDE_PLUGIN_ROOT}/rules/methode.md (dix temps, statuts, transitions).
 
@@ -18,4 +18,5 @@ Délégation : 3 recherches ou plus, ou 100 lignes de sortie, vers les soldats H
 Skills : /socle:tache · /socle:livrer · /socle:recette-ecran · /socle:secrets
 Secret : écrire NOM=valeur dans %LOCALAPPDATA%\socle\a_poser.env (notepad "$env:LOCALAPPDATA\socle\a_poser.env") ; la session suivante le pose en variable user et vide le fichier ; sinon l'écran Windows des variables (rundll32 sysdm.cpl,EditEnvironmentVariables) ; jamais `poser NOM` depuis le chat ; registre requis/reserve, contrôle : /socle:secrets verifier. Jamais dans un fichier Claude ; Snowflake = SSO `connections.toml` seul.
 Emplacements : `C:/tmp` interdit ; code et venv dans le projet, état machine dans `%LOCALAPPDATA%/socle`, jetable dans le scratchpad de session ; venv jamais copié, toujours recréé depuis `requirements-dev.txt` (`/socle:nouveau-projet venv`) (`rules/emplacements.md`).
+Règles machine : rules/machine, copiées dans ~/.claude/rules au démarrage.
 Règles complètes : ${CLAUDE_PLUGIN_ROOT}/rules/
