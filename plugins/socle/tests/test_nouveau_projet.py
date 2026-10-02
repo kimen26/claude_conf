@@ -156,3 +156,48 @@ def test_remise_lance_inventaire_secrets_en_premier(plugin, tmp_path, capsys):
     sp.main(["remise-au-pas", str(projet)])
     sortie = capsys.readouterr().out
     assert sortie.index("INVENTAIRE-FAUX") < sortie.index("aucun écart")
+
+
+# ------------------------------------------------------------------ venv
+REEL = Path(__file__).resolve().parents[1]
+
+
+def faux_venv(projet: Path, virtual_env: str):
+    sc = projet / ".venv/Scripts"
+    sc.mkdir(parents=True)
+    (sc / "activate.bat").write_text(f'@echo off\r\nset "VIRTUAL_ENV={virtual_env}"\r\n', encoding="utf-8")
+
+
+def test_venv_refuse_sans_requirements(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", str(REEL))
+    projet = tmp_path / "p"
+    faux_venv(projet, r"D:\ailleurs\p\.venv")
+    assert sp.main(["venv", str(projet), "--oui"]) == 1
+    assert "pip freeze" in capsys.readouterr().out
+    assert (projet / ".venv").is_dir()
+
+
+def test_venv_sans_oui_ne_supprime_rien(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", str(REEL))
+    projet = tmp_path / "p"
+    faux_venv(projet, r"D:\ailleurs\p\.venv")
+    (projet / "requirements-dev.txt").write_text("# vide\n", encoding="utf-8")
+    assert sp.main(["venv", str(projet)]) == 0
+    sortie = capsys.readouterr().out
+    assert "SIMULATION" in sortie and r"D:\ailleurs\p\.venv" in sortie
+    assert (projet / ".venv/Scripts/activate.bat").is_file()
+
+
+def test_venv_oui_recree(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", str(REEL))
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "local"))
+    monkeypatch.setenv("PIP_NO_CACHE_DIR", "1")
+    monkeypatch.setenv("PIP_DISABLE_PIP_VERSION_CHECK", "1")
+    projet = tmp_path / "p"
+    faux_venv(projet, r"D:\ailleurs\p\.venv")
+    (projet / "requirements-dev.txt").write_text("# vide\n", encoding="utf-8")
+    assert sp.main(["venv", str(projet), "--oui"]) == 0
+    sortie = capsys.readouterr().out
+    assert "venv recréé" in sortie and "restantes dans Scripts/ : 0" in sortie
+    bat = (projet / ".venv/Scripts/activate.bat").read_text(encoding="utf-8", errors="replace")
+    assert "ailleurs" not in bat

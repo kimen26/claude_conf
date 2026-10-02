@@ -11,6 +11,8 @@ Règle normative. `C:\tmp` (et `/c/tmp`, `C:/tmp`) est INTERDIT : mesuré le 202
 | Preuves à conserver | `<projet>/recette/<AAAA-MM-JJ>/` (git-ignoré par le gabarit) | `C:\tmp`, vrac à la racine |
 | Secrets | voir `secrets.md` | tout fichier |
 
+- Venv recréable : `requirements-dev.txt` versionné à la racine, `.venv` jamais copié ni déplacé, toujours recréé
+  (`/socle:nouveau-projet venv`) ; `session_start` signale un venv non relocalisé.
 - Profil Playwright resté à l'ancien emplacement : `python outils/preuve_navigateur.py migrer-profil`
   (déplace, ne copie pas ; si rien à déplacer, relancer `setup <URL>`).
 - Le projet sous OneDrive est un risque : fichiers écrasés, venv synchronisé, sessions qui fuient vers `C:\tmp`.

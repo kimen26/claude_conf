@@ -1,0 +1,4 @@
+# Dépendances DIRECTES du poste local, versions épinglées (==). Une par ligne.
+# Recréer le venv : /socle:nouveau-projet venv  (le .venv n'est jamais copié ni déplacé).
+# Le déploiement Snowflake garde son environment.yml : ne pas mélanger.
+pytest

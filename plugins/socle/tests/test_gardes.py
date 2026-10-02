@@ -10,7 +10,8 @@ import pytest
 
 PLUGIN = Path(__file__).resolve().parent.parent
 SCRIPTS = PLUGIN / "hooks" / "scripts"
-CHAINSNOW = Path(r"C:\Users\yann.ponaire\OneDrive - Infopro Digital\Documents\CLAUDE_CODE_PROJECTS\chainsnow_max_reglementaire")
+# Projet de référence : variable SOCLE_PROJET_REF, sinon ~/CLAUDE_CODE_PROJECTS/chainsnow_max_reglementaire ; absent = test sauté.
+CHAINSNOW = Path(os.environ.get("SOCLE_PROJET_REF") or Path.home() / "CLAUDE_CODE_PROJECTS" / "chainsnow_max_reglementaire")
 
 # Valeurs fabriquées à l'exécution : le fichier de test ne porte aucun secret en clair.
 SBP = "sbp_" + "0123456789abcdef01234567"
@@ -407,3 +408,51 @@ def test_session_start_ssl_onedrive_venv(tmp_path, monkeypatch):
     assert len(out) == 2 and "venv hors projet détecté" in out[1] and "remise-au-pas" in out[1]
     monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path / "proj"))
     assert len(ss.controle_emplacements()) == 1
+
+
+def _faux_venv(projet, virtual_env):
+    sc = projet / ".venv" / "Scripts"
+    sc.mkdir(parents=True)
+    (sc / "activate.bat").write_text(f'@echo off\r\nset "VIRTUAL_ENV={virtual_env}"\r\n', encoding="utf-8")
+
+
+def test_session_start_venv_non_relocalise(tmp_path, monkeypatch):
+    monkeypatch.syspath_prepend(str(SCRIPTS))
+    import session_start as ss
+    monkeypatch.setattr(ss, "TMP_CLAUDE", str(tmp_path / "absent"))
+    proj = tmp_path / "proj"
+    _faux_venv(proj, r"C:\Autre\Chemin\.venv")
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(proj))
+    out = ss.controle_emplacements()
+    assert len(out) == 1 and "non relocalisé" in out[0] and "nouveau-projet venv" in out[0]
+    ok = tmp_path / "ok"
+    _faux_venv(ok, str(ok / ".venv").upper())  # casse différente : normcase
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(ok))
+    assert ss.controle_emplacements() == []
+
+
+def test_garde_socle_s70_s71_complet_seulement(tmp_path):
+    git_init(tmp_path)
+    _faux_venv(tmp_path, r"C:\Autre\.venv")
+    (tmp_path / "app.py").write_text("x = 1\n", encoding="utf-8")
+    c, _ = codes(tmp_path)
+    assert {"S-70", "S-71"} <= c
+    r = lancer("garde_socle.py", args=("--session", str(tmp_path)))
+    assert "S-70" not in r.stdout and "S-71" not in r.stdout
+    (tmp_path / "requirements-dev.txt").write_text("pytest\n", encoding="utf-8")
+    assert "S-71" not in codes(tmp_path)[0]
+
+
+def test_porte_dependances_gabarit_avertit_sans_bloquer(tmp_path):
+    outils = tmp_path / "outils"
+    outils.mkdir()
+    gab = PLUGIN / "gabarits" / "outils" / "portes.py"
+    (outils / "portes.py").write_text(gab.read_text(encoding="utf-8"), encoding="utf-8")
+    (tmp_path / "app.py").write_text("x = 1\n", encoding="utf-8")
+    r = subprocess.run([sys.executable, "-B", str(outils / "portes.py")], capture_output=True, text=True,
+                       encoding="utf-8")
+    assert r.returncode == 0 and "[AVERT] dependances" in r.stdout
+    (tmp_path / "requirements-dev.txt").write_text("pytest\n", encoding="utf-8")
+    r = subprocess.run([sys.executable, "-B", str(outils / "portes.py")], capture_output=True, text=True,
+                       encoding="utf-8")
+    assert r.returncode == 0 and "AVERT" not in r.stdout

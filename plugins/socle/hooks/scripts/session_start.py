@@ -39,6 +39,15 @@ def controle_emplacements():
     if "onedrive" in projet.lower():
         out.append(r"Projet sous OneDrive : fichiers écrasés, venv synchronisé, sessions qui fuient vers C:\tmp. "
                    "Déplacer le repo hors OneDrive (git est la sauvegarde).")
+    try:
+        sys.path.insert(0, HERE)
+        import garde_socle
+        ancien = garde_socle.venv_non_relocalise(os.path.abspath(projet))
+    except Exception:
+        ancien = None
+    if ancien:
+        out.append(f"ATTENTION .venv non relocalisé (VIRTUAL_ENV={ancien}) : le recréer, jamais le copier "
+                   "-> /socle:nouveau-projet venv --oui (requirements-dev.txt requis)")
     import glob
     if glob.glob(os.path.join(TMP_CLAUDE, "venv-*")):
         out.append("venv hors projet détecté : /socle:nouveau-projet remise-au-pas")

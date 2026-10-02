@@ -27,7 +27,7 @@ navigateur coexistaient, 12 node + 13 cmd tournaient pour des MCP que personne n
 ## MCP : zéro process au repos
 
 - Niveau user (`~/.claude.json`) : **uniquement des MCP HTTP/SSE** (0 process). Aujourd'hui :
-  `cobalt-docs`.
+  aucun.
 - **Jamais `npx -y …@latest` en config user** : chaque MCP npx = `cmd → node (npx) → cmd → node`
   + conhost, dans **chaque** session, plus un contrôle réseau via Netskope au démarrage.
 - Un MCP à process vit dans le `.mcp.json` du projet qui l'utilise. Si on le remet en user malgré

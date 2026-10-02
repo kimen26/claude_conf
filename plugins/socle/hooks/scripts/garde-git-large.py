@@ -11,7 +11,7 @@ import re
 import sys
 
 try:
-    data = json.load(sys.stdin)
+    data = json.loads(sys.stdin.buffer.read().decode("utf-8", "replace"))  # UTF-8 explicite (cp1252 par défaut sous Windows)
 except Exception:
     sys.exit(0)
 
@@ -27,6 +27,7 @@ PATTERNS = [
 ]
 for p in PATTERNS:
     if re.search(p, cmd):
+        sys.stderr.reconfigure(encoding="utf-8")  # sinon cp1252 : emoji et accents illisibles
         sys.stderr.write(
             "\n🛑 GARDE GIT : add/commit global refusé.\n"
             f"   Commande : {cmd[:120]}\n"

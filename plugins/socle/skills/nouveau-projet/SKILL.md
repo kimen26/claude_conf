@@ -23,7 +23,7 @@ python socle_projet.py init [chemin]
 ```
 
 1. `git init` si absent.
-2. Copie des gabarits **sans jamais écraser** un fichier existant : `CLAUDE.md`, `.gitignore` (avec `secrets*.ps1`), `.env.example` (noms seuls), `memory/*.md`, `outils/portes.py`, `outils/smoke.py`, `outils/deployer.py`, `backlog/config.yml`, et le shim `outils/preuve_navigateur.py` (3 lignes, voir skill `preuve-navigateur`).
+2. Copie des gabarits **sans jamais écraser** un fichier existant : `CLAUDE.md`, `.gitignore` (avec `secrets*.ps1`), `.env.example` (noms seuls), `memory/*.md`, `outils/portes.py`, `outils/smoke.py`, `outils/deployer.py`, `backlog/config.yml`, et le shim `outils/preuve_navigateur.py` (5 lignes, voir skill `preuve-navigateur`).
 3. `backlog init` si la commande existe, sinon dire `npm i -g backlog.md` (une fois par PC) et créer `backlog/tasks/` à la main.
 4. Premier commit `chore: socle projet`, **par chemins listés** (jamais `git add -A`). `--sans-commit` pour s'en passer.
 5. Remplir ensuite la mission, le routage et les invariants du `CLAUDE.md` (viser < 100 lignes dès le départ).
@@ -36,12 +36,21 @@ python socle_projet.py remise-au-pas [chemin] [--radical]        # simulation, n
 python socle_projet.py remise-au-pas [chemin] [--radical] --oui  # applique, après accord de Yann
 ```
 
-Lance d'abord `secrets.py inventaire <projet>` (skill `/socle:secrets`, noms seulement), puis `garde_socle.py --complet` (via `--json`), et traite les écarts dans l'ordre **S-30 à S-35** (secrets, accès Snowflake, snow isolé) → **S-10** (.mcp.json) → **S-20** (navigateur hors socle) → **S-01/02/03** (CLAUDE.md, memory/, .gitignore) → **S-50/60** (backlog, portes) → **S-40** (doublons plugin, settings mort).
+Lance d'abord `secrets.py inventaire <projet>` (skill `/socle:secrets`, noms seulement), puis `garde_socle.py --complet` (via `--json`), et traite les écarts dans l'ordre **S-30 à S-35** (secrets, accès Snowflake, snow isolé) → **S-10** (.mcp.json) → **S-20** (navigateur hors socle) → **S-01/02/03** (CLAUDE.md, memory/, .gitignore) → **S-50/60** (backlog, portes) → **S-40** (doublons plugin, settings mort) → **S-70** (venv non relocalisé) et **S-71** (`.py` sans `requirements*.txt` ni `pyproject.toml`, hors `outils/`) : ces deux-là ne sortent qu'en `--complet`/`--json`, pas en `--session`.
 
 - **Chaque geste est confirmé par Yann** : présenter le plan de la simulation, attendre l'accord, relancer avec `--oui`. Jamais supprimer sans confirmation explicite.
 - Le script complète ce qui manque (sans écraser) ; secrets, `.mcp.json` et le reste sont signalés « à traiter à la main » avec le correctif du garde.
 - **`--radical`** : tout ce que S-40 et S-20 signalent est **déplacé, jamais supprimé**, dans `_a_supprimer/<AAAA-MM-JJ>/` en conservant l'arborescence relative, avec un `MANIFESTE.md` (fichier, raison, remplacé par quoi dans le plugin). Yann supprime le dossier lui-même.
 - Un déplacement isolé : `python socle_projet.py deplacer <fichiers...> --raison "..." [--remplace-par "..."]`.
+
+## Mode `venv` (recréer, jamais copier)
+
+```
+python socle_projet.py venv [chemin]        # simulation : affiche ce qui serait fait
+python socle_projet.py venv [chemin] --oui  # applique
+```
+
+Convention : `requirements-dev.txt` à la racine (dépendances DIRECTES du poste local, versions épinglées ; un `requirements*.txt` existant est lu à défaut). Le déploiement Snowflake garde son `environment.yml` : ne pas mélanger. Sans aucun `requirements*.txt` la commande **refuse** et propose `pip freeze > requirements-dev.txt` (à relire). Avec `--oui` : freeze de l'ancien venv sauvegardé dans `%LOCALAPPDATA%\socle\backups\<date>\<projet>-freeze.txt`, `.venv` supprimé (seul geste destructif, d'où le flag), `python -m venv .venv` avec le Python courant, `pip install -r`, puis affichage de `sys.prefix` et du nombre de mentions de l'ancien chemin restantes dans `Scripts/`. `session_start` signale un `.venv` dont `VIRTUAL_ENV` n'est pas `<projet>\.venv`.
 
 ## Fin des deux modes
 

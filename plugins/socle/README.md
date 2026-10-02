@@ -20,7 +20,7 @@ Redémarrer la session ensuite.
 - `tests/` : `python -m pytest plugins/socle/tests`
 Audit manuel : `python hooks/scripts/garde_socle.py --complet [chemin]`.
 
-## Mettre à jour
+## Versionner
 Toute modification du plugin impose un bump de `version` dans `plugin.json` ET `marketplace.json` (même valeur), sinon `claude plugin update` répond « already at the latest version » et le cache garde l'ancien code.
 
 ## Secrets

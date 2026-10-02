@@ -58,6 +58,17 @@ def porte_cadratin() -> list[str]:
     return problemes
 
 
+def avertissement_dependances() -> list[str]:
+    """Avertissement (non bloquant) : du .py hors .venv et ni requirements*.txt ni pyproject.toml a la racine."""
+    if list(RACINE.glob("requirements*.txt")) or (RACINE / "pyproject.toml").is_file():
+        return []
+    py = [c for c in fichiers((".py",)) if c.relative_to(RACINE).parts[0] != "outils"]
+    if not py:
+        return []
+    return [f"{len(py)} fichier(s) .py sans requirements*.txt ni pyproject.toml : pip freeze > requirements-dev.txt"]
+
+
+AVERTISSEMENTS = {"dependances": avertissement_dependances}
 PORTES_GENERIQUES = {"compilation": porte_compilation, "cadratin": porte_cadratin}
 PORTES_PROJET: dict = {}  # ajouter ici : {"nom": fonction}
 
@@ -85,6 +96,10 @@ def main() -> int:
         if len(problemes) > 20:
             print(f"    +{len(problemes) - 20} autres")
         rouges += bool(problemes)
+    if not args.porte:
+        for nom, avert in AVERTISSEMENTS.items():
+            for probleme in avert():
+                print(f"[AVERT] {nom} : {probleme}")  # n'influe pas sur le code de sortie
     print(f"{len(portes) - rouges}/{len(portes)} portes vertes")
     return 1 if rouges else 0
 

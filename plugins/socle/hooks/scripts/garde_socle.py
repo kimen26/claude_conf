@@ -14,7 +14,7 @@ from collections import namedtuple
 
 Ecart = namedtuple("Ecart", "code fichier ligne regle correctif")
 
-GRAVITE = ["S-30", "S-31", "S-33", "S-32", "S-34", "S-35", "S-36", "S-37", "S-10", "S-20", "S-40", "S-01", "S-02", "S-03", "S-50", "S-60"]
+GRAVITE = ["S-30", "S-31", "S-33", "S-32", "S-34", "S-35", "S-36", "S-37", "S-10", "S-20", "S-40", "S-01", "S-02", "S-03", "S-50", "S-60", "S-70", "S-71"]
 EXCLUS = {".venv", "venv", "node_modules", "_a_supprimer", ".git", ".snowflake", "__pycache__"}
 PROFIL_OK = "/socle/pw-profile"
 STATUTS = ["Todo", "Ready", "Dev", "Recette", "Relecture", "Valide", "Livre", "Rejete"]
@@ -526,18 +526,62 @@ def s_60(racine):
             for f in ("portes.py", "smoke.py", "deployer.py") if not os.path.isfile(os.path.join(racine, "outils", f))]
 
 
-CONTROLES = [s_01, s_02, s_03, s_10, s_20, s_30, s_31, s_32, s_33, s_34, s_35, s_36, s_37, s_40, s_50, s_60]
+def venv_non_relocalise(racine):
+    """Ancien chemin lu dans .venv/Scripts/activate.bat si VIRTUAL_ENV n'est pas <racine>/.venv, sinon None.
+
+    Lecture seule d'un petit fichier ; jamais d'exception (None en cas de doute).
+    """
+    try:
+        t = _lire(os.path.join(racine, ".venv", "Scripts", "activate.bat"))
+        m = re.search(r'(?im)^\s*set\s+"?VIRTUAL_ENV=([^"\r\n]+)', t)
+        if not m:
+            return None
+
+        def norm(p):
+            return os.path.normcase(os.path.realpath(p.strip()))
+        ancien = m.group(1).strip()
+        return None if norm(ancien) == norm(os.path.join(racine, ".venv")) else ancien
+    except Exception:
+        return None
+
+
+def s_70(racine):
+    """Venv non relocalisé : un .venv copié ou déplacé garde l'ancien chemin dans ses lanceurs."""
+    ancien = venv_non_relocalise(racine)
+    if not ancien:
+        return []
+    return [Ecart("S-70", ".venv", 0, f"venv non relocalisé (VIRTUAL_ENV={ancien})",
+                  "/socle:nouveau-projet venv --oui : recréer, jamais copier ni déplacer")]
+
+
+def s_71(racine):
+    """Du Python exécutable sans dépendances déclarées (requirements*.txt ou pyproject.toml à la racine)."""
+    if any(f.startswith("requirements") and f.endswith(".txt") for f in os.listdir(racine)) \
+            or os.path.isfile(os.path.join(racine, "pyproject.toml")):
+        return []
+    py = [r for r in _fichiers_py(racine) if not r.startswith("outils/")]
+    if not py:
+        return []
+    return [Ecart("S-71", py[0], 0, f"{len(py)} fichier(s) .py sans requirements*.txt ni pyproject.toml",
+                  "pip freeze > requirements-dev.txt (à relire, dépendances directes épinglées)")]
+
+
+CONTROLES = [s_01, s_02, s_03, s_10, s_20, s_30, s_31, s_32, s_33, s_34, s_35, s_36, s_37, s_40, s_50, s_60,
+             s_70, s_71]
+COMPLETS_SEULEMENT = (s_70, s_71)  # hors --session : S-70 est déjà signalé par session_start, S-71 est trop bavard
 
 
 def _rang(code):
     return GRAVITE.index(code) if code in GRAVITE else 99
 
 
-def auditer(racine):
+def auditer(racine, complet=True):
     if not os.path.isdir(os.path.join(racine, ".git")):
         return []
     out = []
     for fn in CONTROLES:
+        if not complet and fn in COMPLETS_SEULEMENT:
+            continue
         try:
             out.extend(fn(racine))
         except Exception as e:  # un contrôle cassé ne casse pas les autres
@@ -581,7 +625,7 @@ def main(argv):
         elif not a.startswith("--"):
             chemin = a
     racine = os.path.abspath(chemin or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
-    ecarts = auditer(racine)
+    ecarts = auditer(racine, complet=(mode != "session"))
     if mode == "json":
         lignes = [json.dumps([e._asdict() for e in ecarts], ensure_ascii=False)]
     elif mode == "complet":

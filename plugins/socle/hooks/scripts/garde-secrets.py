@@ -12,7 +12,7 @@ import re
 import sys
 
 try:
-    data = json.load(sys.stdin)
+    data = json.loads(sys.stdin.buffer.read().decode("utf-8", "replace"))  # UTF-8 explicite (cp1252 par défaut sous Windows)
 except Exception:
     sys.exit(0)
 
@@ -23,6 +23,7 @@ ENV_FILE = re.compile(r"(^|[\/\s\"'])\.env(\.[\w-]+)?(?<!\.example)(?<!\.sample)
 
 
 def refuse(what: str) -> None:
+    sys.stderr.reconfigure(encoding="utf-8")  # sinon cp1252 : emoji et accents illisibles
     sys.stderr.write(
         "\n🛑 GARDE SECRETS : lecture de secrets refusée.\n"
         f"   {what}\n"

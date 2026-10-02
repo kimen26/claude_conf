@@ -4,6 +4,7 @@
     socle_projet.py init [chemin] [--sans-commit]
     socle_projet.py remise-au-pas [chemin] [--radical] [--oui]
     socle_projet.py deplacer <fichiers...> --raison "..." [--remplace-par "..."] [--racine .]
+    socle_projet.py venv [chemin] [--oui]
 
 Règles : on n'écrase jamais un fichier existant, on ne supprime jamais rien (les fichiers
 retirés du projet sont DÉPLACÉS dans ``_a_supprimer/<AAAA-MM-JJ>/``, Yann supprime lui-même).
@@ -36,8 +37,9 @@ GABARITS_FIXES = [
     ("outils/portes.py", "outils/portes.py"),
     ("outils/smoke.py", "outils/smoke.py"),
     ("outils/deployer.py", "outils/deployer.py"),
+    ("requirements-dev.txt", "requirements-dev.txt"),
 ]
-ORDRE_REMISE = ["S-30", "S-31", "S-33", "S-32", "S-34", "S-35", "S-10", "S-20", "S-01", "S-02", "S-03", "S-50", "S-60", "S-40"]
+ORDRE_REMISE = ["S-30", "S-31", "S-33", "S-32", "S-34", "S-35", "S-10", "S-20", "S-01", "S-02", "S-03", "S-50", "S-60", "S-40", "S-70", "S-71"]
 
 
 # ------------------------------------------------------------------ localisation
@@ -242,6 +244,95 @@ def cmd_deplacer(args) -> int:
     return 0
 
 
+# ------------------------------------------------------------------------- venv
+def fichier_requirements(projet: Path) -> Path | None:
+    """requirements-dev.txt d'abord, sinon un requirements*.txt lu en lecture (le premier par ordre alphabétique)."""
+    dev = projet / "requirements-dev.txt"
+    if dev.is_file():
+        return dev
+    autres = sorted(projet.glob("requirements*.txt"))
+    return autres[0] if autres else None
+
+
+def python_venv(venv: Path) -> Path:
+    return venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+
+
+def sauvegarde_freeze(projet: Path, venv: Path) -> str:
+    """Freeze de l'ancien venv vers %LOCALAPPDATA%/socle/backups/<date>/<projet>-freeze.txt (best effort)."""
+    py = python_venv(venv)
+    if not py.is_file():
+        return "pas de python dans l'ancien .venv : freeze non sauvegardé"
+    base = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData/Local")
+    dst = Path(base) / "socle/backups" / datetime.date.today().isoformat() / f"{projet.name}-freeze.txt"
+    try:
+        r = subprocess.run([str(py), "-m", "pip", "freeze"], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=120)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return f"freeze impossible ({type(e).__name__})"
+    if r.returncode != 0:
+        return "freeze impossible (pip freeze en échec dans l'ancien .venv)"
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    dst.write_text(r.stdout, encoding="utf-8")
+    return f"freeze sauvegardé : {dst}"
+
+
+def mentions_ancien(venv: Path, ancien: str) -> int:
+    """Nombre de fichiers de Scripts/ qui citent encore l'ancien chemin (lecture seule)."""
+    if not ancien:
+        return 0
+    n = 0
+    for f in (venv / ("Scripts" if os.name == "nt" else "bin")).glob("*"):
+        try:
+            if f.is_file() and f.stat().st_size < 1_000_000 and ancien.encode() in f.read_bytes():
+                n += 1
+        except OSError:
+            pass
+    return n
+
+
+def cmd_venv(args) -> int:
+    projet = Path(args.chemin).resolve()
+    venv = projet / ".venv"
+    req = fichier_requirements(projet)
+    if req is None:
+        py = python_venv(venv)
+        print("refus : aucun requirements*.txt à la racine, impossible de recréer le venv sans perdre les dépendances.")
+        print(f"Proposition (à relire, ne garder que les dépendances directes) :\n  {py} -m pip freeze > requirements-dev.txt")
+        return 1
+    sys.path.insert(0, str(racine_plugin() / "hooks/scripts"))
+    try:
+        import garde_socle
+        ancien = garde_socle.venv_non_relocalise(str(projet)) or ""
+    except Exception:
+        ancien = ""
+    print(f"projet : {projet}\nrequirements : {req.name}\nancien chemin du venv : {ancien or '(aucun écart détecté)'}")
+    if not args.oui:
+        print("SIMULATION (rien n'est modifié). Avec --oui : sauvegarde du freeze dans "
+              "%LOCALAPPDATA%\\socle\\backups\\<date>\\, suppression de .venv, "
+              f"`python -m venv .venv` (Python courant : {sys.executable}), puis `pip install -r {req.name}`.")
+        return 0
+    if venv.exists():
+        print(sauvegarde_freeze(projet, venv))
+        shutil.rmtree(venv)
+        print("supprimé : .venv")
+    r = subprocess.run([sys.executable, "-m", "venv", str(venv)], capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    if r.returncode != 0:
+        print("échec : python -m venv\n" + (r.stderr or r.stdout)[-400:])
+        return 1
+    py = python_venv(venv)
+    r = subprocess.run([str(py), "-m", "pip", "install", "-r", str(req)], capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    if r.returncode != 0:
+        print("échec : pip install -r " + req.name + "\n" + (r.stderr or r.stdout)[-600:])
+        return 1
+    prefix = subprocess.run([str(py), "-c", "import sys;print(sys.prefix)"], capture_output=True, text=True).stdout.strip()
+    print(f"venv recréé : sys.prefix = {prefix}\nmentions de l'ancien chemin restantes dans Scripts/ : "
+          f"{mentions_ancien(venv, ancien)}")
+    return 0
+
+
 # ----------------------------------------------------------------- remise au pas
 def planifier(projet: Path, radical: bool) -> list[dict]:
     """Transforme les écarts en gestes : creer / ajouter / deplacer / manuel."""
@@ -345,6 +436,9 @@ def parser() -> argparse.ArgumentParser:
     d.add_argument("--raison", required=True)
     d.add_argument("--remplace-par", default="")
     d.add_argument("--racine", default=".")
+    v = sub.add_parser("venv", help="recréer .venv depuis requirements-dev.txt (simulation sans --oui)")
+    v.add_argument("chemin", nargs="?", default=".")
+    v.add_argument("--oui", action="store_true")
     return ap
 
 
@@ -352,7 +446,8 @@ def main(argv=None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     args = parser().parse_args(argv)
-    return {"init": cmd_init, "remise-au-pas": cmd_remise, "deplacer": cmd_deplacer}[args.cmd](args)
+    return {"init": cmd_init, "remise-au-pas": cmd_remise, "deplacer": cmd_deplacer,
+            "venv": cmd_venv}[args.cmd](args)
 
 
 if __name__ == "__main__":

@@ -90,7 +90,7 @@ def verifier_bash(cmd):
     if "@playwright/mcp" in cmd:
         refuser("le navigateur de preuve est preuve_navigateur, pas le MCP : importe preuve_navigateur.")
     if re.search(r"playwright\s+codegen", cmd) and "--save-storage" in cmd:
-        refuser("le SSO vit dans le profil partagé C:/tmp/claude/pw-profile : utilise setup_sso() de preuve_navigateur.")
+        refuser("le SSO vit dans le profil partagé %LOCALAPPDATA%/socle/pw-profile : utilise setup_sso() de preuve_navigateur.")
 
 
 def textes_ajoutes(ti):
@@ -125,7 +125,7 @@ def verifier_fichier(chemin, textes):
 
 def main():
     try:
-        data = json.load(sys.stdin)
+        data = json.loads(sys.stdin.buffer.read().decode("utf-8", "replace"))  # UTF-8 explicite (cp1252 par défaut sous Windows)
         outil = data.get("tool_name")
         ti = data.get("tool_input") or {}
         if not isinstance(ti, dict):
