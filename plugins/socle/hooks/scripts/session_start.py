@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""SessionStart (startup) : SSL Netskope, sync de lib/, DIGEST, audit du projet.
+"""SessionStart (startup|resume|clear|compact) : SSL Netskope, sync de lib/ et des règles machine,
+DIGEST (complet dans un projet adopté, une ligne ailleurs), audit du projet.
 
 Ne doit jamais échouer : tout est dans try/except, exit 0 toujours.
 La sortie standard est ajoutée au contexte de la session.

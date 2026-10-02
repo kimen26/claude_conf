@@ -525,7 +525,7 @@ def cmd_purger(args) -> int:
                      "rien : aucune sauvegarde d'un fichier qui porte un secret"))
     for p in ps1_skills():
         cand.append((p, "secrets*.ps1 : secret en fichier",
-                     "variable d'environnement utilisateur (/socle:secrets poser NOM)"))
+                     "variable d'environnement utilisateur (Yann écrit NOM=valeur dans %LOCALAPPDATA%\\socle\\a_poser.env)"))
     if not cand:
         print("rien à purger")
         return 0

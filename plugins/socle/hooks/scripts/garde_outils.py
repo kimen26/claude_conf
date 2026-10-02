@@ -113,7 +113,7 @@ def verifier_fichier(chemin, textes):
     if any(s in p for s in ("/socle/hooks/", "/socle/tests/", "/socle/lib/")):
         return
     if FICHIER_SENSIBLE.search(p) and ms.a_motif(texte, large=True):
-        refuser("un secret se pose par /socle:secrets poser NOM, et se référence en ${NOM}.")
+        refuser("un secret s'écrit dans %LOCALAPPDATA%\\socle\\a_poser.env (Yann écrit NOM=valeur), et se référence en ${NOM}.")
     if base != "preuve_navigateur.py" and any(
             m in texte for m in ("storage_state=", "connect_over_cdp(", "launch_persistent_context(")):
         refuser("le contexte navigateur ne s'ouvre pas à la main : importe preuve_navigateur.")

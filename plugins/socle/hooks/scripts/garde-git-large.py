@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-"""PreToolUse hook (matcher: Bash) : refuse les commits « filet ».
+"""PreToolUse hook (matcher: Bash|PowerShell) : refuse les commits « filet ».
 
-Bloque : git add -A / --all / . / -u, git commit -a / -am.
+Bloque : git add -A / --all / . / -u, git commit -a / -am / --all.
+Le texte d'un message (-m "..." / --message, corps de heredoc) est ignoré : un « -a » cité
+dans un message n'est pas l'option. Limite : une option entre guillemets (git add "-A") et un
+alias git ne sont pas vus.
 Pourquoi : l'index git est partagé entre sessions ; un add global emporte le
 travail d'autrui. Un commit liste ses fichiers un par un.
 Exit 2 = commande refusée, message renvoyé à Claude.
@@ -25,8 +28,12 @@ PATTERNS = [
     r"\bgit\s+add\s+(\S+\s+)*(-A|--all|\.)(\s|$)",
     r"\bgit\s+commit\s+(\S+\s+)*(-a|-am|--all)(\s|$)",
 ]
+# Le texte d'un message de commit n'est pas une option : « git commit -m "corrige le flag -a" » passe.
+HEREDOC = re.compile(r"<<-?\s*[\"']?(\w+)[\"']?[^\n]*\n.*?\n\s*\1(?=\s|\)|$)", re.S)
+MESSAGE = re.compile(r"""(?<![\w-])(?:-m|--message)(?:\s+|=)(?:"(?:\\.|[^"\\])*"|'[^']*')""")
+scan = MESSAGE.sub('-m ""', HEREDOC.sub("", cmd))
 for p in PATTERNS:
-    if re.search(p, cmd):
+    if re.search(p, scan):
         sys.stderr.reconfigure(encoding="utf-8")  # sinon cp1252 : emoji et accents illisibles
         sys.stderr.write(
             "\n🛑 GARDE GIT : add/commit global refusé.\n"

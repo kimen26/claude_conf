@@ -170,8 +170,11 @@ def _exclu(rel):
 
 
 def s_01(racine):
+    """CLAUDE.md absent ou trop long. Un AGENTS.md sans CLAUDE.md est la convention du projet : pas d'écart."""
     p = os.path.join(racine, "CLAUDE.md")
     if not os.path.isfile(p):
+        if os.path.isfile(os.path.join(racine, "AGENTS.md")):
+            return []
         return [Ecart("S-01", "CLAUDE.md", 0, "CLAUDE.md absent", "créer un CLAUDE.md court (/socle:nouveau-projet)")]
     n = len(_lire(p).splitlines())
     if n >= 100:
@@ -380,7 +383,7 @@ def s_31(racine):
         for k, v in (env or {}).items():
             if ms.valeur_en_clair(k, v):
                 out.append(Ecart("S-31", f".claude/{f}", 0, f"env {k} en clair",
-                                 "/socle:secrets poser NOM, puis référencer en ${NOM}"))
+                                 "Yann écrit NOM=valeur dans %LOCALAPPDATA%\\socle\\a_poser.env, puis référencer en ${NOM}"))
     return out
 
 
@@ -411,11 +414,11 @@ def s_33(racine):
         for k, v in (srv.get("env") or {}).items():
             if not ms.REFERENCE.match(str(v)):
                 out.append(Ecart("S-33", ".mcp.json", 0, f"serveur {nom} : env {k} en clair",
-                                 "écrire ${VAR}, la variable étant posée par /socle:secrets poser"))
+                                 "écrire ${VAR} ; Yann écrit VAR=valeur dans %LOCALAPPDATA%\\socle\\a_poser.env"))
         for k, v in (srv.get("headers") or {}).items():
             if "${" not in str(v):
                 out.append(Ecart("S-33", ".mcp.json", 0, f"serveur {nom} : header {k} en clair",
-                                 "écrire ${VAR}, la variable étant posée par /socle:secrets poser"))
+                                 "écrire ${VAR} ; Yann écrit VAR=valeur dans %LOCALAPPDATA%\\socle\\a_poser.env"))
         args = [str(a) for a in (srv.get("args") or [])]
         if os.path.basename(str(srv.get("command", ""))).lower().split(".")[0] == "uvx"                 and any("snowflake-labs-mcp" in a for a in args)                 and not any("snowflake-connector-python[secure-local-storage]" in a for a in args):
             out.append(Ecart("S-33", ".mcp.json", 0, f"serveur {nom} : snowflake-labs-mcp sans keyring (pas de cache SSO)",
@@ -664,9 +667,16 @@ def rendu_session(ecarts):
     for e in ecarts:
         cpt[e.code] = cpt.get(e.code, 0) + 1
     resume = ", ".join(f"{c} x{cpt[c]}" for c in sorted(cpt, key=_rang))
-    lignes = [f"SOCLE : {len(ecarts)} écarts ({resume}) -> /socle:nouveau-projet remise-au-pas"]
+    lignes = [f"SOCLE : {_nb_ecarts(len(ecarts))} ({resume}) -> /socle:nouveau-projet remise-au-pas"]
     lignes += [f"  {e.code} {_loc(e)} : {e.regle}" for e in ecarts[:2]]
+    if len(ecarts) > 2:
+        lignes.append(f"  ... {len(ecarts) - 2} de plus : python \"{os.path.abspath(__file__)}\" --complet")
     return lignes
+
+
+def _nb_ecarts(n):
+    """« 1 écart », « 3 écarts » (accord au pluriel dès 2)."""
+    return f"{n} écart" + ("s" if n > 1 else "")
 
 
 def rendu_complet(ecarts):
@@ -675,7 +685,7 @@ def rendu_complet(ecarts):
     rows = [("code", "fichier:ligne", "règle", "correctif")] + [(e.code, _loc(e), e.regle, e.correctif) for e in ecarts]
     w = [max(len(r[i]) for r in rows) for i in range(3)]
     lignes = ["  ".join(r[i].ljust(w[i]) for i in range(3)) + "  " + r[3] for r in rows]
-    return lignes + ["", f"Total : {len(ecarts)} écarts"]
+    return lignes + ["", f"Total : {_nb_ecarts(len(ecarts))}"]
 
 
 def main(argv):

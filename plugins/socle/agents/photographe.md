@@ -29,7 +29,7 @@ EXCEPTIONS / SONDES EN ÉCHEC
 - **Tu n'ouvres aucune image pour la décrire ni la juger** : un soldat Haiku ne juge pas une
   capture. Tu rends le chemin, ton chef regarde.
 - Aucune modification du code du projet ni de `tests/` ; écritures permises : le dossier de sortie
-  demandé et le scratchpad de session (à défaut `%LOCALAPPDATA%\socle\tmp`).
+  demandé et le scratchpad de session fourni par Claude Code, à défaut `%LOCALAPPDATA%\socle\tmp`.
 - Un scénario qui échoue : la fin de sa sortie brute, sans hypothèse sur la cause.
 - Aucun avis sur le rendu, même évident.
 - Un seul navigateur à la fois sur le profil partagé : si le verrou du profil est pris, dis-le,

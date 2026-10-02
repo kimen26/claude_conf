@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 <!-- Copier à la racine du projet. Ce fichier dit CE QU'EST le projet, pas COMMENT on travaille :
-     la méthode vit dans le plugin socle (rules/methode.md, injectée à chaque session). -->
+     la méthode vit dans le plugin socle (rules/methode.md ; le digest en est injecté au démarrage d'un projet adopté). -->
 
 ## Mission
 
@@ -12,7 +12,7 @@
 ## Méthode
 
 Elle vient du plugin `socle` : marche en dix temps, tâches Backlog.md, officiers et soldats,
-mémoire en quintette `memory/`. Ne rien en recopier ici. Voir `${CLAUDE_PLUGIN_ROOT}/rules/methode.md`.
+mémoire en quintette `memory/`. Ne rien en recopier ici. Chemin : Glob `**/socle/*/rules/methode.md` sous `~/.claude/plugins/cache`.
 
 Les trois commandes conventionnelles du projet (à implémenter dans `outils/`) :
 - `python outils/portes.py` : toutes les portes mécaniques, exit 0 ou 1

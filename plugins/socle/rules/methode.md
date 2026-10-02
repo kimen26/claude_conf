@@ -12,7 +12,7 @@ en permanence.
 - **Verdict** : décision humaine, Valide ou Rejete, avec motif écrit.
 - **Lane** : verrou de périmètre de fichiers, un couloir d'exécution où un seul dev travaille à la fois.
 - **Officiers** (Sonnet) jugent : `eclaireur`, `executant`, `banc`, `relecteur`.
-- **Soldats** (Haiku) n'inventent rien, ne jugent pas : `fouilleur`, `greffier`, `photographe`.
+- **Soldats** (Haiku) n'inventent rien, ne jugent pas : `fouilleur`, `greffier`, `photographe`. Un officier ne passe en Haiku qu'exceptionnellement, pour une tâche purement mécanique, et on le dit alors ainsi.
 
 ## La marche en dix temps
 
@@ -39,8 +39,8 @@ Un temps échoue deux fois pour la même raison : on arrête et on replanifie (r
 | Todo → Ready | orchestrateur | dépendances `Livre`, critères vérifiables |
 | Ready → Dev | `executant` | `Implementation Plan` écrit et relu |
 | Dev → Recette | `executant` | portes vertes prouvées par `greffier`, DoD cochée |
-| Recette → Relecture | `banc` | captures produites par `photographe` ET regardées (obligatoire si un écran est touché ; sinon saut documenté) |
-| Relecture → Valide | `relecteur` + Yann | `## Relecture` sans BLOQUANT, portes rejouées par l'orchestrateur, verdict écrit |
+| Recette → Relecture | orchestrateur, sur le rendu de `banc` | captures produites par `photographe` ET regardées (obligatoire si un écran est touché ; sinon saut documenté) |
+| Relecture → Valide | orchestrateur, sur le rendu de `relecteur` + verdict de Yann | `## Relecture` sans BLOQUANT, portes rejouées par l'orchestrateur, verdict écrit |
 | Valide → Livre | `/socle:livrer` | commit, déploiement, smoke verts, ligne de CHANGELOG |
 | tout → Rejete | orchestrateur | motif écrit dans `## Verdict` ; retour à `Dev` si reprise |
 | clôture | orchestrateur | L/D versées, TODO à jour, fichier de la tâche déplacé de `backlog/tasks/` vers `backlog/completed/` (voir `/socle:tache`, section Clôturer), jamais réécrit |

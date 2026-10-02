@@ -185,7 +185,7 @@ def test_session_start(tmp_path):
 # ---------------------------------------------------------------- pilier secrets et emplacements
 BS = chr(92)
 GLPAT = "glpat-" + "FAUX0000000000000000"
-MSG_SECRET = "/socle:secrets poser NOM"
+MSG_SECRET = "NOM=valeur"
 
 
 @pytest.mark.parametrize("outil,ti", [

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PreToolUse hook (matcher: Bash|Read) : refuse d'exposer un .env.
+"""PreToolUse hook (matcher: Bash|PowerShell|Read) : refuse d'exposer un .env.
 
 Bloque toute lecture d'un fichier .env / .env.* (sauf *.env.example) par
 Read, ou par une commande shell (cat, type, Get-Content, head, grep, …),
@@ -22,12 +22,16 @@ inp = data.get("tool_input") or {}
 ENV_FILE = re.compile(r"(^|[\/\s\"'])\.env(\.[\w-]+)?(?<!\.example)(?<!\.sample)(?<!\.template)($|[\s\"'])")
 
 
-def refuse(what: str) -> None:
+CONSEIL_ENV = "Les .env ne se lisent pas ; se référer à .env.example."
+CONSEIL_DUMP = "Un dump d'environnement expose les variables secrètes ; lire une variable précise par son nom, ou lister les NOMS sans valeur."
+
+
+def refuse(what: str, conseil: str = CONSEIL_ENV) -> None:
     sys.stderr.reconfigure(encoding="utf-8")  # sinon cp1252 : emoji et accents illisibles
     sys.stderr.write(
         "\n🛑 GARDE SECRETS : lecture de secrets refusée.\n"
         f"   {what}\n"
-        "   Les .env ne se lisent pas ; se référer à .env.example.\n"
+        f"   {conseil} Inventaire des noms : /socle:secrets inventaire.\n"
     )
     sys.exit(2)
 
@@ -48,5 +52,5 @@ if tool in ("Bash", "PowerShell"):
     if re.search(r"(^|[;&|]\s*)(printenv|env|set)\s*($|[;&|>])", cmd) or re.search(
         r"Get-ChildItem\s+Env:|\bgci\s+env:", cmd, re.I
     ):
-        refuse(f"Dump d'environnement : {cmd[:120]}")
+        refuse(f"Dump d'environnement : {cmd[:120]}", CONSEIL_DUMP)
 sys.exit(0)
