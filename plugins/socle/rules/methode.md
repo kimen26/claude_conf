@@ -51,7 +51,10 @@ Un temps échoue deux fois pour la même raison : on arrête et on replanifie (r
 - **1 dev par lane** : deux tâches `Dev` en parallèle seulement si leurs périmètres de fichiers
   sont disjoints (`/socle:tache`, conflits). Sinon on enchaîne via `dependencies`.
 - **Règle des deux usages** : pas de nouvel agent, skill ou hook tant que la procédure n'a pas
-  servi deux fois à la main.
+  servi deux fois à la main. Même règle pour le code : on extrait au 2e usage identique, jamais
+  d'abstraction pour un usage hypothétique (règle `conception`).
+- **Contre-avis** : une proposition de Yann se teste avant de s'exécuter (objection et alternative,
+  ou « Rien à opposer »), sans complaisance ni contradiction gratuite (règle `contradicteur`).
 - **Seuils de délégation** : 3 recherches ou plus, ou une sortie de plus de 100 lignes. Recherche
   vers `fouilleur`, rejeu de commandes vers `greffier`, preuve d'écran vers `photographe`. Sous le
   seuil, on le fait soi-même.

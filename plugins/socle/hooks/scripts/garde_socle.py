@@ -14,7 +14,7 @@ from collections import namedtuple
 
 Ecart = namedtuple("Ecart", "code fichier ligne regle correctif")
 
-GRAVITE = ["S-30", "S-31", "S-33", "S-32", "S-34", "S-35", "S-36", "S-37", "S-10", "S-20", "S-40", "S-01", "S-02", "S-03", "S-50", "S-60", "S-70", "S-71"]
+GRAVITE = ["S-30", "S-31", "S-33", "S-32", "S-34", "S-35", "S-36", "S-37", "S-10", "S-20", "S-40", "S-01", "S-02", "S-03", "S-50", "S-60", "S-70", "S-71", "S-72", "S-73"]
 EXCLUS = {".venv", "venv", "node_modules", "_a_supprimer", ".git", ".snowflake", "__pycache__"}
 PROFIL_OK = "/socle/pw-profile"
 STATUTS = ["Todo", "Ready", "Dev", "Recette", "Relecture", "Valide", "Livre", "Rejete"]
@@ -566,8 +566,62 @@ def s_71(racine):
                   "pip freeze > requirements-dev.txt (à relire, dépendances directes épinglées)")]
 
 
+def _octets_lf(chemin):
+    """Contenu d'un fichier, fins de ligne normalisées en LF. None si illisible."""
+    try:
+        with open(chemin, "rb") as f:
+            return f.read().replace(b"\r\n", b"\n")
+    except OSError:
+        return None
+
+
+def s_72(racine):
+    """Niveau user : chaque règle du repo claude_conf/rules/ existe à l'identique dans ~/.claude/rules/."""
+    home = os.path.expanduser("~")
+    src = os.path.join(home, ".claude", "skills-sync-workspace", "claude_conf", "rules")
+    if not os.path.isdir(src):
+        return []
+    out = []
+    for nom in sorted(os.listdir(src)):
+        ref = _octets_lf(os.path.join(src, nom)) if nom.endswith(".md") else None
+        if ref is None:
+            continue
+        cible = os.path.join(home, ".claude", "rules", nom)
+        actuel = _octets_lf(cible)
+        if actuel == ref:
+            continue
+        etat = "absente" if actuel is None else "dérive"
+        out.append(Ecart("S-72", f"~/.claude/rules/{nom}", 0, f"règle {nom} {etat} du repo claude_conf/rules",
+                         f"copier claude_conf/rules/{nom} vers ~/.claude/rules/ (ou reporter la copie machine dans le repo si elle est la plus récente)"))
+    return out
+
+
+def s_73(racine):
+    """BOM UTF-8 en tête d'un JSON lu par Node (settings du projet, .mcp.json, settings user) : l'extension échoue."""
+    home = os.path.expanduser("~")
+    cibles = [(os.path.join(racine, ".claude", "settings.json"), ".claude/settings.json"),
+              (os.path.join(racine, ".claude", "settings.local.json"), ".claude/settings.local.json"),
+              (os.path.join(racine, ".mcp.json"), ".mcp.json"),
+              (os.path.join(home, ".claude", "settings.json"), "~/.claude/settings.json")]
+    out, vus = [], set()
+    for chemin, nom in cibles:
+        reel = os.path.normcase(os.path.realpath(chemin))
+        if reel in vus:
+            continue
+        vus.add(reel)
+        try:
+            with open(chemin, "rb") as f:
+                bom = f.read(3) == b"\xef\xbb\xbf"
+        except OSError:
+            continue
+        if bom:
+            out.append(Ecart("S-73", nom, 0, f"{nom} commence par un BOM UTF-8 (Node : « not valid JSON »)",
+                             "réécrire sans BOM (Python ou Edit, jamais Out-File/Set-Content de PowerShell 5.1)"))
+    return out
+
+
 CONTROLES = [s_01, s_02, s_03, s_10, s_20, s_30, s_31, s_32, s_33, s_34, s_35, s_36, s_37, s_40, s_50, s_60,
-             s_70, s_71]
+             s_70, s_71, s_72, s_73]
 COMPLETS_SEULEMENT = (s_70, s_71)  # hors --session : S-70 est déjà signalé par session_start, S-71 est trop bavard
 
 

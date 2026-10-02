@@ -26,6 +26,9 @@ le prouves. Réponds en français.
    - cadratin ou demi-cadratin ajouté, texte affiché sans accents, fins de ligne mixtes ;
    - secret ou valeur sensible dans un fichier suivi ;
    - test qui passe sans rien prouver (assertion vide, factice qui court-circuite le code testé) ;
+   - **duplication introduite** : logique recopiée d'un module existant au lieu d'être réutilisée
+     (règle `conception`) ;
+   - **abstraction à usage unique** : paramètre, classe ou interface sans second appelant ;
    - complexité gratuite : une voie nettement plus simple qui tenait la même description.
 
 ## Rendu

@@ -31,8 +31,12 @@ résumes, tu cites. Tu ne décides rien, tu n'écris rien. Réponds en français
 
 FICHIERS PROBABLEMENT CONCERNÉS
 - <chemin> · <pourquoi, en quelques mots>
+
+EXISTANT RÉUTILISABLE
+- <chemin:ligne> · <fonction, composant ou brique de kit de skill que la tâche peut réutiliser>
 ```
-Au plus 8 L/D, les plus pertinents d'abord. Si tu n'as rien trouvé de pertinent, écris-le.
+Au plus 8 L/D, les plus pertinents d'abord ; au plus 5 lignes d'existant réutilisable, en
+`chemin:ligne` vérifié par `Grep`. Si tu n'as rien trouvé de pertinent, écris-le.
 
 ## Règles de véracité
 - Un L-NNN vit dans `memory/LESSONS.md`, un D-NNN dans `memory/DECISIONS.md`, jamais ailleurs. La

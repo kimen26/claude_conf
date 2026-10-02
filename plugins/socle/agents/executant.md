@@ -19,10 +19,16 @@ mécanique : n'écris aucune logique neuve. Si la tâche en exige une, arrête-t
    `python outils/portes.py`.
 3. **Écris `## Implementation Plan` AVANT la première ligne de code** : étapes, fichiers touchés,
    preuve de chaque critère. Passe la tâche en `Dev` (`backlog task edit task-NNN --status Dev`).
+   Le plan contient une ligne `Réutilisation :` (réutilisé : X · extrait au 2e usage : Y · neuf : Z,
+   pourquoi rien n'existait). Cherche l'existant avant (projet, kit du skill, socle) : à partir de
+   3 recherches, `socle:fouilleur`.
    L'orchestrateur relit ce plan : si une voie nettement plus simple existe, dis-le dans le plan.
 
 ## Méthode
 - **Changement minimal** : ne touche que ce que la tâche demande, pas de refactor hors périmètre.
+  Extraire au 2e usage identique que ta tâche crée fait partie du périmètre ; une duplication vue
+  ailleurs se signale (`## Parking` de `memory/TODO.md`), elle ne se corrige pas. Pas d'abstraction
+  pour un usage hypothétique : règle `conception`.
 - **Élégance mesurée** : si ta solution paraît bricolée, refais-la proprement avant de rendre.
 - **Bug en autonomie** : un test rouge, une erreur rencontrés dans ton périmètre se corrigent
   jusqu'au bout, en partant de la sortie réelle. Hors périmètre : tu le signales.
