@@ -29,13 +29,19 @@ fournit les statuts).
 |---|---|
 | Créer | `backlog task create "titre" --dep task-085 --labels ecran --assignee executant` : le **numéro vient de l'outil**, jamais de la main |
 | Statut | `backlog task edit task-086 --status Dev` |
-| Lister le prêt | `backlog task list --status Ready` |
 | Tableau | `backlog board export backlog/board.md --force` (sans argument l'outil écrit `Backlog.md` à la racine) |
-| Voir | `backlog task 86 --plain` |
+
+La CLI se limite à ces trois gestes (`task create`, `task edit N --status X`, `board export`). Tout
+le contenu s'écrit avec Edit. Interdits : `--notes`, `--plan`, `--ac`, `--check-ac`, `--description`
+(mesuré : ils écrasent tout ce qui suit `## Implementation Notes`, donc Recette, Relecture, Verdict).
 
 Après `create`, remplir les sections du gabarit ci-dessous (`gabarits/tache.md` du plugin en donne
 un exemple rempli). Frontmatter : `id`, `title`, `status`, `assignee`, `labels`, `priority`,
 `dependencies`, `created_date`.
+
+**HO** (hors projet : plugin, machine) : même gabarit, dans
+`%LOCALAPPDATA%\socle\taches\AAAA-MM-JJ_<nom>.md`, sans CLI ni statut. `executant` et `relecteur`
+acceptent l'une ou l'autre fiche.
 
 ## Gabarit de tâche
 
@@ -69,17 +75,17 @@ Le problème vu de l'utilisateur, pourquoi maintenant, ce qui est hors sujet.
 ## Implementation Plan
 (écrit par l'exécutant AVANT de coder)
 
-## Implementation Notes
-(écrit par l'exécutant en rendant)
-
 ## Recette
-(écrit par `banc` : par critère visuel, tenu, non tenu ou non prouvé, avec le chemin de la capture)
+(écrit par `banc`, écran seulement : par critère visuel, tenu, non tenu ou non prouvé, avec le chemin de la capture)
 
 ## Relecture
 (écrit par `relecteur` : un constat par ligne, puis critère par critère, puis l'avis)
 
 ## Verdict
 (décision humaine : Valide ou Rejete, date, motif)
+
+## Implementation Notes
+(écrit par l'exécutant en rendant ; DERNIÈRE section, la CLI traite tout ce qui la suit comme ses notes)
 ```
 
 ## Preuve exigée à chaque transition
@@ -109,7 +115,8 @@ Après `/socle:livrer` (statut `Livre`) :
 
 ## Conflits de périmètre
 
-Avant de lancer deux `executant` en parallèle : lire `## Périmètre` des tâches `Dev` (et de celles
+Le séquentiel est la règle ; le parallèle est une exception (`rules/methode.md`). Un déplacement ou un
+renommage de fichier se réserve à une seule tâche, lancée en premier. Avant de lancer deux `executant` en parallèle : lire `## Périmètre` des tâches `Dev` (et de celles
 qu'on s'apprête à y passer), lister les fichiers autorisés de chacune, intersecter. Une
 intersection non vide, ou deux tâches de même **lane**, veut dire : on ne parallélise pas, on
 enchaîne (`dependencies`) ou on redécoupe. Règle : **1 dev par lane**. Un fichier partagé ne

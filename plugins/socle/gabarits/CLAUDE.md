@@ -11,7 +11,7 @@
 
 ## Méthode
 
-Elle vient du plugin `socle` : marche en dix temps, tâches Backlog.md, officiers et soldats,
+Elle vient du plugin `socle` : deux voies et marche en huit temps, tâches Backlog.md, officiers et soldats,
 mémoire en quintette `memory/`. Ne rien en recopier ici. Chemin : Glob `**/socle/*/rules/methode.md` sous `~/.claude/plugins/cache`.
 
 Les trois commandes conventionnelles du projet (à implémenter dans `outils/`) :

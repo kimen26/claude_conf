@@ -93,6 +93,11 @@ def garde_git(cmd):
     ("git add -A", 2),
     ("git add .", 2),
     ("git add a.py b.py", 0),
+    # une option ne déborde pas sur la commande suivante (faux positif réel du 2026-10-03)
+    ("git add -- a.py b.py && git diff --cached --numstat -- .", 0),
+    ("git add -- a.py; git diff -- .", 0),
+    ("git status && git add .", 2),
+    ("git add a.py && git commit -am x", 2),
 ])
 def test_garde_git_ignore_le_texte_du_message(cmd, attendu):
     assert garde_git(cmd) == attendu

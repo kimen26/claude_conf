@@ -32,8 +32,11 @@ PATTERNS = [
 HEREDOC = re.compile(r"<<-?\s*[\"']?(\w+)[\"']?[^\n]*\n.*?\n\s*\1(?=\s|\)|$)", re.S)
 MESSAGE = re.compile(r"""(?<![\w-])(?:-m|--message)(?:\s+|=)(?:"(?:\\.|[^"\\])*"|'[^']*')""")
 scan = MESSAGE.sub('-m ""', HEREDOC.sub("", cmd))
+# Une option ne déborde pas sur la commande suivante : « git add -- a b && git diff -- . » passe
+# (faux positif réel du 2026-10-03). On juge chaque commande séparément.
+SEGMENTS = re.split(r"&&|\|\||[;|\n]", scan)
 for p in PATTERNS:
-    if re.search(p, scan):
+    if any(re.search(p, s) for s in SEGMENTS):
         sys.stderr.reconfigure(encoding="utf-8")  # sinon cp1252 : emoji et accents illisibles
         sys.stderr.write(
             "\n🛑 GARDE GIT : add/commit global refusé.\n"

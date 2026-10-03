@@ -22,18 +22,18 @@ Redémarrer la session ensuite (le hook de démarrage recopie `lib/` et les règ
 - **Projet neuf** : `/socle:nouveau-projet init` crée CLAUDE.md court, quintette `memory/`, backlog, `outils/{portes,smoke,deployer}.py`, `.env.example`.
 - **Projet existant** : `/socle:nouveau-projet remise-au-pas` fait d'abord une simulation qui ne modifie rien ; après accord, relancer avec `--oui`. `--radical` pour une remise à plat. Un `AGENTS.md` sans `CLAUDE.md` est la convention du projet : pas de CLAUDE.md proposé.
 - **Commandes du script** (`socle_projet.py`, chemin complet : `python "${CLAUDE_PLUGIN_ROOT}/skills/nouveau-projet/scripts/socle_projet.py" <commande>`, dans une session Claude Code ; hors session, le dossier du plugin sous `~/.claude/plugins/cache`) : `init [chemin] [--sans-commit]` · `remise-au-pas [chemin] [--radical] [--oui]` · `deplacer <fichiers...> --raison "..." [--remplace-par "..."] [--racine .]` (déplace dans `_a_supprimer/<date>/` avec `MANIFESTE.md`, ne supprime jamais) · `venv [chemin] [--oui]` (recrée `.venv` depuis `requirements-dev.txt`, jamais copié ; simulation sans `--oui`).
-- **Une tâche** : `/socle:tache` crée la tâche (numéro pris par l'outil) et la fait avancer dans la marche en 10 temps (reconnaissance, plan, élégance, exécution, DoD, recette, relecture, verdict, mise en service, capitalisation ; détail dans `rules/methode.md` du plugin, que `Glob **/socle/*/rules/methode.md` sous `~/.claude/plugins/cache` retrouve), puis `/socle:livrer <numéros>` commite par chemins listés, pousse, déploie, passe en Livre.
+- **Une tâche** : `/socle:tache` crée la tâche (numéro pris par l'outil) et la fait avancer dans la marche en 8 temps (reconnaissance et plan, exécution, DoD, preuve rejouée, relecture, verdict, mise en service, capitalisation ; voie courte sans fiche si le diff se décrit en une phrase ; détail dans `rules/methode.md` du plugin, que `Glob **/socle/*/rules/methode.md` sous `~/.claude/plugins/cache` retrouve), puis `/socle:livrer <numéros>` commite par chemins listés, pousse, déploie, passe en Livre.
 - **Secrets** : `/socle:secrets` (`inventaire`, `verifier`, `poser`, `ssl`, `purger`, `snow`). Un secret est une variable utilisateur ; aucune commande ne lit ni n'affiche une valeur.
-- **Les 20 contrôles** : `garde_socle.py` audite un projet (secrets, `.mcp.json`, CLAUDE.md, memory/, backlog, portes, venv, BOM, règles machine). Liste et ordre de traitement dans `skills/nouveau-projet/SKILL.md`. Audit manuel : `python hooks/scripts/garde_socle.py --complet [chemin]`.
-- **Règles machine** : livrées par le plugin dans `rules/machine/` (contradicteur, conception, memoire-projet, interaction-style, pas-d-artifact) et copiées vers `~/.claude/rules/` à chaque démarrage si absentes ou différentes. Aucune suppression : un fichier en plus côté machine est conservé. La garde S-72 compare `~/.claude/rules/` à cette source.
-- **HO** : tâche machine hors projet, un fichier de `%LOCALAPPDATA%\socle\taches\`, hors Backlog (vocabulaire dans `rules/methode.md`).
+- **Les 21 contrôles** : `garde_socle.py` audite un projet (secrets, `.mcp.json`, CLAUDE.md, memory/, backlog, portes, venv, BOM, règles machine). Liste et ordre de traitement dans `skills/nouveau-projet/SKILL.md`. Audit manuel : `python hooks/scripts/garde_socle.py --complet [chemin]`.
+- **Règles machine** : livrées par le plugin dans `rules/machine/` (contradicteur, conception, memoire-projet, interaction-style, pas-d-artifact) et copiées vers `~/.claude/rules/` à chaque démarrage seulement si absentes. Jamais d'écrasement ni de suppression : une copie différente est conservée et signalée par la garde S-72.
+- **HO** : la même tâche hors projet, un fichier `%LOCALAPPDATA%\socle\taches\AAAA-MM-JJ_<nom>.md`, même gabarit, sans Backlog (vocabulaire dans `rules/methode.md`).
 
 ## Structure
 - `.claude-plugin/plugin.json` : manifeste
 - `hooks/hooks.json` : câblage ; `hooks/scripts/` : session_start, garde_socle, garde_outils, gardes rapatriées
 - `lib/` : bibliothèques partagées, synchronisées vers `${CLAUDE_PLUGIN_DATA}/lib/` au démarrage
 - `rules/` : DIGEST.md (injecté au démarrage), méthode, doctrines ; `rules/machine/` : règles copiées vers `~/.claude/rules/`
-- `agents/` (7) · `skills/` (nouveau-projet, tache, livrer, recette-ecran, preuve-navigateur, secrets) · `gabarits/` : modèles copiés par `init`
+- `agents/` (5) · `skills/` (nouveau-projet, tache, livrer, recette-ecran, preuve-navigateur, secrets) · `gabarits/` : modèles copiés par `init`
 - `tests/` : `python -m pytest plugins/socle/tests`
 
 ## Versionner

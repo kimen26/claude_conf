@@ -2,7 +2,7 @@
 """Portes mecaniques du projet : toutes les verifications vert/rouge, en une commande.
 
 Convention du plugin socle : `python outils/portes.py` sort en code 0 si toutes les portes sont
-vertes, 1 sinon. Les agents (greffier, executant, relecteur) et /socle:livrer n'appellent que ca.
+vertes, 1 sinon. Les agents (executant, relecteur) et /socle:livrer n'appellent que ca.
 
 Deux portes generiques sont deja la. Ajouter les portes propres au projet dans PORTES_PROJET :
 chaque porte est une fonction sans argument qui rend une liste de problemes (vide = verte).

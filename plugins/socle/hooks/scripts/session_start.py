@@ -103,30 +103,71 @@ def sync_lib():
     return [f"SOCLE : lib/ synchronisée ({n} fichier(s) copié(s))"] if n else []
 
 
+def sha_regle(octets):
+    """sha256 d'une règle, fins de ligne normalisées en LF."""
+    return hashlib.sha256(octets.replace(b"\r\n", b"\n")).hexdigest()
+
+
+def chemin_registre():
+    return os.path.join(donnees_plugin(), "regles_copiees.json")
+
+
+def lire_registre():
+    try:
+        with open(chemin_registre(), encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
 def sync_regles():
-    """Copie rules/machine/*.md vers ~/.claude/rules/ si absent ou différent (fins de ligne en LF). Jamais de suppression."""
+    """Copie rules/machine/*.md vers ~/.claude/rules/ (LF). Registre regles_copiees.json : nom -> sha256 du contenu
+    copié la dernière fois. Absente : copiée. Identique : enregistrée. Différente et copie jamais touchée (hash
+    == registre) : mise à jour du plugin, écrasée. Différente sinon : modification locale, jamais écrasée (S-72)."""
     src = os.path.join(racine_plugin(), "rules", "machine")
     if not os.path.isdir(src):
         return []
     dst = os.path.join(os.path.expanduser("~"), ".claude", "rules")
-    copiees = []
+    registre = lire_registre()
+    avant = dict(registre)
+    copiees, maj = [], []
     for nom in sorted(os.listdir(src)):
         if not nom.endswith(".md"):
             continue
+        cible = os.path.join(dst, nom)
         with open(os.path.join(src, nom), "rb") as f:
             ref = f.read().replace(b"\r\n", b"\n")
-        cible = os.path.join(dst, nom)
+        h_ref = sha_regle(ref)
         try:
             with open(cible, "rb") as f:
-                if f.read().replace(b"\r\n", b"\n") == ref:
-                    continue
+                actuel = f.read()
         except OSError:
-            pass
+            actuel = None
+        if actuel is not None:
+            h_act = sha_regle(actuel)
+            if h_act == h_ref:
+                registre[nom] = h_ref
+                continue
+            if registre.get(nom) != h_act:
+                continue  # modifiée localement : conservée
         os.makedirs(dst, exist_ok=True)
         with open(cible, "wb") as f:
             f.write(ref)
-        copiees.append(nom)
-    return [f"SOCLE : règles machine copiées vers ~/.claude/rules ({', '.join(copiees)})"] if copiees else []
+        registre[nom] = h_ref
+        (copiees if actuel is None else maj).append(nom)
+    if registre != avant:
+        try:
+            os.makedirs(donnees_plugin(), exist_ok=True)
+            with open(chemin_registre(), "w", encoding="utf-8") as f:
+                json.dump(registre, f, indent=1, sort_keys=True)
+        except OSError:
+            pass
+    out = []
+    if copiees:
+        out.append(f"SOCLE : règles machine copiées vers ~/.claude/rules ({', '.join(copiees)})")
+    out += [f"SOCLE : règle {n} mise à jour" for n in maj]
+    return out
 
 
 def projet_courant():

@@ -18,7 +18,7 @@ portes vertes. Ce skill force le geste qui compte : produire les captures, puis 
    dossier de sortie. Il rend : COMMANDE, CAPTURES (chemins), MESURES (s'il y en a), EXCEPTIONS.
    Il ne regarde rien.
 3. **Ouvrir chaque capture avec Read** et la décrire en une phrase. Qui regarde : l'orchestrateur,
-   ou `banc` (temps 6 de la marche). Jamais un soldat Haiku.
+   ou `banc` (temps 4 de la marche). Jamais un soldat Haiku.
 4. Chercher : texte qui chevauche ou touche un autre, texte rogné, élément hors écran, bouton
    recouvert, contraste, accent manquant, cadratin affiché.
 5. Rendre par critère : **tenu** / **non tenu** / **non prouvé**, avec le chemin de la capture.

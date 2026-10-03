@@ -4,7 +4,7 @@ description: "Met en service des tâches Backlog au statut Valide : commit par c
 argument-hint: "<numéros de tâche>"
 ---
 
-# /socle:livrer : la mise en service (temps 9)
+# /socle:livrer : la mise en service (temps 7)
 
 Argument : les numéros de tâche (`$ARGUMENTS`). Une demande de Yann en langage naturel (« livre »)
 VAUT lancement : Claude invoque ce skill lui-même, il ne demande pas à Yann de taper la commande.
@@ -28,6 +28,7 @@ exigé**. Rouge : refuser de livrer, rapporter la fin de sortie, ne rien committ
 - Fichiers du commit = **périmètre de la tâche ∩ `git status`**, ajoutés un par un (`git add <chemin>`).
   Tout fichier modifié hors périmètre reste dehors et se signale. Un doute : `git diff <fichier>`,
   des lignes que la session n'a pas écrites ne se commitent pas.
+- Avant de commiter : `git diff --cached --name-only` comparé à la liste attendue ; un écart, stop.
 - Un fichier partagé entre deux tâches ne part qu'une fois, dans un seul commit : le dire.
 - Un commit par tâche. Message Conventional Commits `type(scope): description (task-NNN)`, terminé
   par la ligne `Co-Authored-By` demandée par le contexte de session.

@@ -5,16 +5,18 @@ Usage : python garde_socle.py [--session | --complet | --json] [chemin]
 Un dossier sans .git est ignoré (sortie vide, exit 0). Exit 0 toujours,
 sauf --complet qui sort 1 s'il y a des écarts.
 """
+import hashlib
 import json
 import os
 import re
 import subprocess
 import sys
+import time
 from collections import namedtuple
 
 Ecart = namedtuple("Ecart", "code fichier ligne regle correctif")
 
-GRAVITE = ["S-30", "S-31", "S-33", "S-32", "S-34", "S-35", "S-36", "S-37", "S-10", "S-20", "S-40", "S-01", "S-02", "S-03", "S-50", "S-60", "S-70", "S-71", "S-72", "S-73"]
+GRAVITE = ["S-30", "S-31", "S-33", "S-32", "S-34", "S-35", "S-36", "S-37", "S-10", "S-20", "S-40", "S-01", "S-02", "S-03", "S-50", "S-60", "S-70", "S-71", "S-72", "S-73", "S-74"]
 EXCLUS = {".venv", "venv", "node_modules", "_a_supprimer", ".git", ".snowflake", "__pycache__"}
 PROFIL_OK = "/socle/pw-profile"
 STATUTS = ["Todo", "Ready", "Dev", "Recette", "Relecture", "Valide", "Livre", "Rejete"]
@@ -587,12 +589,24 @@ def _octets_lf(chemin):
         return None
 
 
+def _registre_regles():
+    """Registre de session_start : nom de règle -> sha256 (LF) de la dernière copie faite par le plugin."""
+    base = os.environ.get("CLAUDE_PLUGIN_DATA") or os.path.join(os.path.expanduser("~"), ".claude", "plugins", "data", "socle")
+    try:
+        data = json.loads(_lire(os.path.join(base, "regles_copiees.json"), "{}"))
+        return data if isinstance(data, dict) else {}
+    except ValueError:
+        return {}
+
+
 def s_72(racine):
-    """Niveau user : chaque règle livrée par le plugin (rules/machine/) existe à l'identique dans ~/.claude/rules/."""
+    """Niveau user : chaque règle livrée par le plugin (rules/machine/) existe à l'identique dans ~/.claude/rules/.
+    Différente et jamais touchée depuis la copie : en attente de mise à jour. Sinon : modifiée localement."""
     home = os.path.expanduser("~")
     src = os.path.join(plugin_root(), "rules", "machine")
     if not os.path.isdir(src):
         return []
+    registre = _registre_regles()
     out = []
     for nom in sorted(os.listdir(src)):
         ref = _octets_lf(os.path.join(src, nom)) if nom.endswith(".md") else None
@@ -602,10 +616,61 @@ def s_72(racine):
         actuel = _octets_lf(cible)
         if actuel == ref:
             continue
-        etat = "absente" if actuel is None else "dérive"
-        out.append(Ecart("S-72", f"~/.claude/rules/{nom}", 0, f"règle {nom} {etat} de la source plugin rules/machine",
-                         "redémarrer la session (session_start recopie rules/machine vers ~/.claude/rules) ; si la copie machine est la plus récente, la reporter dans plugins/socle/rules/machine"))
+        if actuel is None:
+            etat, correctif = "absente de la source plugin", "redémarrer la session (session_start copie la règle absente)"
+        elif registre.get(nom) == hashlib.sha256(actuel).hexdigest():
+            etat, correctif = "en attente de mise à jour", "rien à faire : la version du plugin sera recopiée au prochain démarrage"
+        else:
+            etat, correctif = "modifiée localement", "reporter dans plugins/socle/rules/machine ou supprimer la copie (la version du plugin sera recopiée au démarrage)"
+        out.append(Ecart("S-72", f"~/.claude/rules/{nom}", 0, f"règle {nom} {etat}", correctif))
     return out
+
+
+def _git_dirs(racine):
+    """(gitdir, commondir) : suit `.git` fichier (worktree) puis `commondir`."""
+    git = os.path.join(racine, ".git")
+    if os.path.isfile(git):
+        ligne = _lire(git).strip()
+        if ligne.startswith("gitdir:"):
+            git = os.path.normpath(os.path.join(racine, ligne[7:].strip()))
+    commun = _lire(os.path.join(git, "commondir")).strip()
+    if commun:
+        commun = os.path.normpath(os.path.join(git, commun))
+    return git, commun or git
+
+
+def _plus_recent_mtime(chemin):
+    """mtime du fichier, ou le plus récent des fichiers d'un dossier ; None si rien."""
+    if os.path.isfile(chemin):
+        return os.path.getmtime(chemin)
+    best = None
+    for d, _, fichiers in os.walk(chemin):
+        for n in fichiers:
+            try:
+                t = os.path.getmtime(os.path.join(d, n))
+            except OSError:
+                continue
+            best = t if best is None or t > best else best
+    return best
+
+
+def s_74(racine):
+    """Clone sans fetch récent : repère = le plus récent de FETCH_HEAD, packed-refs, refs/remotes/ (worktree : via
+    commondir), dans un repo avec remote. Aucun repère : « aucun fetch enregistré ». Aucun réseau."""
+    git, commun = _git_dirs(racine)
+    if "[remote " not in _lire(os.path.join(commun, "config")):
+        return []
+    reperes = []
+    for base, nom in ((git, "FETCH_HEAD"), (commun, "FETCH_HEAD"), (commun, "packed-refs"), (commun, os.path.join("refs", "remotes"))):
+        t = _plus_recent_mtime(os.path.join(base, nom))
+        if t is not None:
+            reperes.append(t)
+    age = int((time.time() - max(reperes)) // 86400) if reperes else None
+    if age is not None and age <= 7:
+        return []
+    quand = "aucun fetch enregistré" if age is None else f"dernier fetch il y a {age} j"
+    return [Ecart("S-74", ".git/FETCH_HEAD", 0, quand,
+                  "git fetch, puis vérifier l'avance de la branche distante avant de travailler")]
 
 
 def s_73(racine):
@@ -633,7 +698,7 @@ def s_73(racine):
 
 
 CONTROLES = [s_01, s_02, s_03, s_10, s_20, s_30, s_31, s_32, s_33, s_34, s_35, s_36, s_37, s_40, s_50, s_60,
-             s_70, s_71, s_72, s_73]
+             s_70, s_71, s_72, s_73, s_74]
 COMPLETS_SEULEMENT = (s_70, s_71)  # hors --session : S-70 est déjà signalé par session_start, S-71 est trop bavard
 
 

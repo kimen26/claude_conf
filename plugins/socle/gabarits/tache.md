@@ -43,13 +43,9 @@ s'il doit affiner. Hors sujet : pagination, tri, export.
 2. L'appeler dans `vues/recherche.py` sous la barre, dans un conteneur à hauteur fixe.
 3. Test des trois cas, puis smoke à 1440 px avec un libellé de 300 caractères.
 
-## Implementation Notes
-
-(rempli par l'exécutant en rendant : fichiers touchés avec +x -y, écarts assumés, preuves)
-
 ## Recette
 
-(rempli par `banc` : par critère visuel, tenu, non tenu ou non prouvé, avec le chemin de la capture)
+(rempli par `banc`, écran seulement : par critère visuel, tenu, non tenu ou non prouvé, avec le chemin de la capture)
 
 ## Relecture
 
@@ -58,3 +54,7 @@ s'il doit affiner. Hors sujet : pagination, tri, export.
 ## Verdict
 
 (rempli après la relecture : `AAAA-MM-JJ · Valide | Rejete · motif`)
+
+## Implementation Notes
+
+(rempli par l'exécutant en rendant : fichiers touchés avec +x -y, écarts assumés, preuves ; DERNIÈRE section)
